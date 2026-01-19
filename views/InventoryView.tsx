@@ -20,18 +20,26 @@ const SCARCITY_PREMIUM = 1.25;
 const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
   const {
     materials: storeMaterials,
+    products: storeProducts,
     suppliers,
     transactions,
+    purchaseOrders,
     fetchInventory,
+    addProduct,
+    updateProduct,
+    deleteProduct,
     addMaterial,
     updateMaterial,
+    deleteMaterial,
     recordTransaction,
-    addSupplier
+    addSupplier,
+    deleteSupplier,
+    createPurchaseOrder,
+    receivePurchaseOrder
   } = useInventoryStore();
 
   const { user } = useAppStore();
 
-  const [inventory, setInventory] = useState<Product[]>(MOCK_PRODUCTS);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'PRODUCTS' | 'MATERIALS' | 'SUPPLIERS' | 'HISTORY' | 'PO'>('PRODUCTS');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -60,7 +68,6 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
-  const { purchaseOrders, createPurchaseOrder, receivePurchaseOrder, deleteMaterial, deleteSupplier } = useInventoryStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -70,26 +77,21 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
 
     if (type === 'MATERIAL') deleteMaterial(item.id);
     else if (type === 'SUPPLIER') deleteSupplier(item.id);
-    else if (type === 'PRODUCT') {
-      setInventory(prev => prev.filter(p => p.id !== item.id));
-      toast.success('Product removed from local view');
-    }
+    else if (type === 'PRODUCT') deleteProduct(item.id);
   };
   useEffect(() => {
     fetchInventory();
   }, [fetchInventory]);
 
-  // Use store materials if they exist, otherwise use mock (for first run)
-  const materials = useMemo(() => {
-    return storeMaterials.length > 0 ? storeMaterials : MOCK_MATERIALS;
-  }, [storeMaterials]);
+  // Use store materials
+  const materials = storeMaterials;
 
   const filteredInventory = useMemo(() => {
-    return inventory.filter(p =>
-      (selectedCategory === 'ALL' || p.category === selectedCategory) &&
-      p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    return storeProducts.filter(item =>
+      (selectedCategory === 'ALL' || item.category === selectedCategory) &&
+      item.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [inventory, searchTerm, selectedCategory]);
+  }, [storeProducts, selectedCategory, searchTerm]);
 
   const filteredMaterials = useMemo(() => {
     return materials.filter(m =>
@@ -104,6 +106,25 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
       s.categories.some(c => c.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [suppliers, searchTerm]);
+
+  const groupedInventory = useMemo(() => {
+    const groups: Record<string, Product[]> = {};
+    filteredInventory.forEach(item => {
+      if (!groups[item.category]) groups[item.category] = [];
+      groups[item.category].push(item);
+    });
+    return groups;
+  }, [filteredInventory]);
+
+  const groupedMaterials = useMemo(() => {
+    const groups: Record<string, RawMaterial[]> = {};
+    filteredMaterials.forEach(mat => {
+      const cat = mat.category || 'General';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(mat);
+    });
+    return groups;
+  }, [filteredMaterials]);
 
   const [newItem, setNewItem] = useState<Partial<Product & RawMaterial>>({
     name: '',
@@ -194,7 +215,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
     if (activeTab === 'MATERIALS') {
       targets = materials.filter(m => !m.image);
     } else if (activeTab === 'PRODUCTS') {
-      targets = inventory.filter(p => !p.image);
+      targets = storeProducts.filter(p => !p.image);
     }
 
     if (targets.length === 0) {
@@ -221,7 +242,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
         if (activeTab === 'MATERIALS') {
           updateMaterial({ ...item, image: generatedImage } as RawMaterial);
         } else {
-          setInventory(prev => prev.map(p => p.id === item.id ? { ...p, image: generatedImage } : p));
+          updateProduct({ ...item, image: generatedImage } as Product);
         }
         successCount++;
         // Small delay to avoid rate limits if real
@@ -258,8 +279,8 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
         costPrice: metrics.totalCost,
         image: (newItem as Product).image || `https://picsum.photos/200/200?random=${now}`
       };
-      if (editingId) setInventory(prev => prev.map(p => p.id === editingId ? item : p));
-      else setInventory([item, ...inventory]);
+      if (editingId) updateProduct(item);
+      else addProduct(item);
     } else if (activeTab === 'MATERIALS') {
       const item: RawMaterial = {
         ...(newItem as RawMaterial),
@@ -308,7 +329,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
     let csvContent = "";
     if (activeTab === 'PRODUCTS') {
       csvContent = "ID,Name,Category,Price,Cost,Stock\n" +
-        inventory.map(p => `${p.id},"${p.name}",${p.category},${p.price},${getProductProductionMetrics(p).totalCost},${p.stock || 0}`).join("\n");
+        storeProducts.map(p => `${p.id},"${p.name}",${p.category},${p.price},${getProductProductionMetrics(p).totalCost},${p.stock || 0}`).join("\n");
     } else {
       csvContent = "ID,Name,Category,Stock,Unit,CostPerUnit\n" +
         materials.map(m => `${m.id},"${m.name}",${m.category || ''},${m.quantity},${m.unit},${m.costPerUnit}`).join("\n");
@@ -357,7 +378,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
             ingredients: []
           };
         }).filter(p => p.name);
-        setInventory(prev => [...prev, ...newProducts]);
+        newProducts.forEach(addProduct);
         toast.success(`Imported ${newProducts.length} products`);
       } else {
         toast.error('Import is not supported for this tab');
@@ -468,12 +489,12 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
         });
       }
     } else if (itemType === 'PRODUCT') {
-      const prod = inventory.find(p => p.id === itemId);
+      const prod = storeProducts.find(p => p.id === itemId);
       if (prod) {
         const previousStock = prod.stock || 0;
         const newStock = type === 'ADD' ? previousStock + quantity : previousStock - quantity;
 
-        setInventory(prev => prev.map(p => p.id === itemId ? { ...p, stock: newStock } : p));
+        updateProduct({ ...prod, stock: newStock });
         recordTransaction({
           itemId,
           itemType,
@@ -594,85 +615,107 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-8">
+      <div className="flex-1 overflow-y-auto p-8 pt-4">
         {activeTab === 'PRODUCTS' ? (
-          <div className="grid grid-cols-1 gap-6">
-            {filteredInventory.map(item => {
-              const metrics = getProductProductionMetrics(item);
-              return (
-                <div key={item.id} onClick={() => handleOpenEdit(item)} className={`bg-white p-6 rounded-[2.5rem] border shadow-sm flex flex-col md:flex-row gap-8 hover:shadow-xl transition-all cursor-pointer relative overflow-hidden ${metrics.status === 'UNAVAILABLE' ? 'border-red-200' : 'border-slate-200'}`}>
-                  {metrics.status === 'UNAVAILABLE' && (
-                    <div className="absolute top-0 right-0 bg-red-600 text-white px-6 py-1 font-black text-[10px] uppercase tracking-widest transform rotate-45 translate-x-8 translate-y-4">OUT OF STOCK</div>
-                  )}
-                  <div className="flex gap-6 flex-1">
-                    <img src={item.image} alt={item.name} className="w-36 h-36 rounded-3xl object-cover border border-slate-100 shadow-inner shrink-0" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-3 py-1 rounded-full uppercase tracking-widest">{item.category}</span>
-                        <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${metrics.status === 'AVAILABLE' ? 'bg-indigo-50 text-indigo-600' : 'bg-red-50 text-red-600'}`}>{metrics.status}</span>
-                      </div>
-                      <div className="font-black text-2xl text-slate-800 mb-1">{item.name}</div>
-                      <div className="flex gap-8 mt-4">
-                        <div>
-                          <div className="text-[9px] font-black text-slate-400 uppercase mb-1">Selling</div>
-                          <div className="text-xl font-black text-slate-900">{CURRENCY}{item.price.toLocaleString()}</div>
-                        </div>
-                        <div>
-                          <div className="text-[9px] font-black text-slate-400 uppercase mb-1">Cost</div>
-                          <div className="text-xl font-black text-emerald-600">{CURRENCY}{metrics.totalCost.toLocaleString()}</div>
-                        </div>
-                        <div>
-                          <div className="text-[9px] font-black text-slate-400 uppercase mb-1">Margin</div>
-                          <div className={`text-xl font-black ${item.price - metrics.totalCost > 0 ? 'text-indigo-600' : 'text-red-600'}`}>
-                            {item.price > 0 ? (((item.price - metrics.totalCost) / item.price) * 100).toFixed(0) : 0}%
+          <div className="space-y-12">
+            {(Object.entries(groupedInventory) as [string, Product[]][]).sort().map(([category, items]) => (
+              <div key={category} className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest">{category}</h2>
+                  <div className="h-px bg-slate-100 flex-1"></div>
+                  <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-3 py-1 rounded-full uppercase tracking-widest">{items.length} Items</span>
+                </div>
+                <div className="grid grid-cols-1 gap-6">
+                  {items.map(item => {
+                    const metrics = getProductProductionMetrics(item);
+                    return (
+                      <div key={item.id} onClick={() => handleOpenEdit(item)} className={`bg-white p-6 rounded-[2.5rem] border shadow-sm flex flex-col md:flex-row gap-8 hover:shadow-xl transition-all cursor-pointer relative overflow-hidden ${metrics.status === 'UNAVAILABLE' ? 'border-red-200' : 'border-slate-200'}`}>
+                        {metrics.status === 'UNAVAILABLE' && (
+                          <div className="absolute top-0 right-0 bg-red-600 text-white px-6 py-1 font-black text-[10px] uppercase tracking-widest transform rotate-45 translate-x-8 translate-y-4">OUT OF STOCK</div>
+                        )}
+                        <div className="flex gap-6 flex-1">
+                          <img src={item.image} alt={item.name} className="w-36 h-36 rounded-3xl object-cover border border-slate-100 shadow-inner shrink-0" />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-3 py-1 rounded-full uppercase tracking-widest">{item.category}</span>
+                              <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${metrics.status === 'AVAILABLE' ? 'bg-indigo-50 text-indigo-600' : 'bg-red-50 text-red-600'}`}>{metrics.status}</span>
+                            </div>
+                            <div className="font-black text-2xl text-slate-800 mb-1">{item.name}</div>
+                            <div className="flex gap-8 mt-4">
+                              <div>
+                                <div className="text-[9px] font-black text-slate-400 uppercase mb-1">Selling</div>
+                                <div className="text-xl font-black text-slate-900">{CURRENCY}{item.price.toLocaleString()}</div>
+                              </div>
+                              <div>
+                                <div className="text-[9px] font-black text-slate-400 uppercase mb-1">Cost</div>
+                                <div className="text-xl font-black text-emerald-600">{CURRENCY}{metrics.totalCost.toLocaleString()}</div>
+                              </div>
+                              <div>
+                                <div className="text-[9px] font-black text-slate-400 uppercase mb-1">Margin</div>
+                                <div className={`text-xl font-black ${item.price - metrics.totalCost > 0 ? 'text-indigo-600' : 'text-red-600'}`}>
+                                  {item.price > 0 ? (((item.price - metrics.totalCost) / item.price) * 100).toFixed(0) : 0}%
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={(e) => { e.stopPropagation(); handleOpenAdjustment(item, 'PRODUCT'); }} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:bg-indigo-50 px-3 py-2 rounded-xl transition-colors">Adjust</button>
+                              <button onClick={(e) => { e.stopPropagation(); handleOpenHistory(item.id); }} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:bg-indigo-50 px-3 py-2 rounded-xl transition-colors">Log</button>
+                              <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item, 'PRODUCT'); }} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:bg-red-50 px-3 py-2 rounded-xl transition-colors">Delete</button>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button onClick={(e) => { e.stopPropagation(); handleOpenAdjustment(item, 'PRODUCT'); }} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:bg-indigo-50 px-3 py-2 rounded-xl transition-colors">Adjust</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleOpenHistory(item.id); }} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:bg-indigo-50 px-3 py-2 rounded-xl transition-colors">Log</button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteItem(item, 'PRODUCT'); }} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:bg-red-50 px-3 py-2 rounded-xl transition-colors">Delete</button>
-                      </div>
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         ) : activeTab === 'MATERIALS' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredMaterials.map(mat => (
-              <div key={mat.id} className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden hover:shadow-xl hover:border-indigo-600 transition-all cursor-pointer group flex flex-col">
-                <div className="aspect-square w-full bg-slate-100 relative" onClick={() => handleOpenEdit(mat)}>
-                  {mat.image ? (
-                    <img src={mat.image} alt={mat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
-                      <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                      <span className="text-[10px] font-black uppercase tracking-widest">No Image</span>
-                    </div>
-                  )}
-                  <div className={`absolute bottom-4 right-4 px-3 py-1 rounded-full text-[10px] font-black shadow-sm ${mat.quantity <= (mat.minStockAlert || 5) ? 'bg-red-500 text-white' : 'bg-white/90 text-slate-800 backdrop-blur'}`}>
-                    {mat.quantity} {mat.unit}
-                  </div>
+          <div className="space-y-12">
+            {(Object.entries(groupedMaterials) as [string, RawMaterial[]][]).sort().map(([category, mats]) => (
+              <div key={category} className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest">{category}</h2>
+                  <div className="h-px bg-slate-100 flex-1"></div>
+                  <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-3 py-1 rounded-full uppercase tracking-widest">{mats.length} Items</span>
                 </div>
-                <div className="p-6 flex-1 flex flex-col justify-between">
-                  <div onClick={() => handleOpenEdit(mat)}>
-                    <div className="text-lg font-black text-slate-800 mb-1">{mat.name}</div>
-                    <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
-                      {CURRENCY}{mat.costPerUnit.toLocaleString()} / {mat.unit}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {mats.map(mat => (
+                    <div key={mat.id} className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden hover:shadow-xl hover:border-indigo-600 transition-all cursor-pointer group flex flex-col">
+                      <div className="aspect-square w-full bg-slate-100 relative" onClick={() => handleOpenEdit(mat)}>
+                        {mat.image ? (
+                          <img src={mat.image} alt={mat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                            <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            <span className="text-[10px] font-black uppercase tracking-widest">No Image</span>
+                          </div>
+                        )}
+                        <div className={`absolute bottom-4 right-4 px-3 py-1 rounded-full text-[10px] font-black shadow-sm ${mat.quantity <= (mat.minStockAlert || 5) ? 'bg-red-500 text-white' : 'bg-white/90 text-slate-800 backdrop-blur'}`}>
+                          {mat.quantity} {mat.unit}
+                        </div>
+                      </div>
+                      <div className="p-6 flex-1 flex flex-col justify-between">
+                        <div onClick={() => handleOpenEdit(mat)}>
+                          <div className="text-lg font-black text-slate-800 mb-1">{mat.name}</div>
+                          <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                            {CURRENCY}{mat.costPerUnit.toLocaleString()} / {mat.unit}
+                          </div>
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                          <div className="flex gap-2">
+                            <button onClick={() => handleOpenAdjustment(mat, 'RAW_MATERIAL')} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:bg-indigo-50 px-3 py-2 rounded-xl transition-colors">Adjust</button>
+                            <button onClick={() => handleOpenHistory(mat.id)} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:bg-indigo-50 px-3 py-2 rounded-xl transition-colors">Log</button>
+                            <button onClick={() => handleDeleteItem(mat, 'MATERIAL')} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:bg-red-50 px-3 py-2 rounded-xl transition-colors">Delete</button>
+                          </div>
+                          {mat.quantity <= (mat.minStockAlert || 5) && (
+                            <span className="text-[9px] font-black text-red-500 uppercase">Low Stock</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
-                    <div className="flex gap-2">
-                      <button onClick={() => handleOpenAdjustment(mat, 'RAW_MATERIAL')} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:bg-indigo-50 px-3 py-2 rounded-xl transition-colors">Adjust</button>
-                      <button onClick={() => handleOpenHistory(mat.id)} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:bg-indigo-50 px-3 py-2 rounded-xl transition-colors">Log</button>
-                      <button onClick={() => handleDeleteItem(mat, 'MATERIAL')} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:bg-red-50 px-3 py-2 rounded-xl transition-colors">Delete</button>
-                    </div>
-                    {mat.quantity <= (mat.minStockAlert || 5) && (
-                      <span className="text-[9px] font-black text-red-500 uppercase">Low Stock</span>
-                    )}
-                  </div>
+                  ))}
                 </div>
               </div>
             ))}

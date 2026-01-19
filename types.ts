@@ -8,7 +8,10 @@ export enum AppView {
   SETTINGS = 'SETTINGS',
   INVENTORY = 'INVENTORY',
   FLOOR_MAP = 'FLOOR_MAP',
-  STATION_DISPLAY = 'STATION_DISPLAY'
+  STATION_DISPLAY = 'STATION_DISPLAY',
+  FINANCE = 'FINANCE',
+  HR = 'HR',
+  CRM = 'CRM'
 }
 
 export type PrintLocation = 'KITCHEN' | 'BAR' | 'GRILL' | 'STORE';
@@ -39,6 +42,17 @@ export interface User {
   role: 'admin' | 'waiter' | 'manager' | 'chef' | 'bartender';
   locationId: string;
   pin?: string;
+  baseSalary?: number;
+  joinedDate?: number;
+}
+
+export interface Shift {
+  id: string;
+  userId: string;
+  userName: string;
+  startTime: number;
+  endTime?: number;
+  status: 'OPEN' | 'CLOSED';
 }
 
 export interface RawMaterial {
@@ -192,6 +206,7 @@ export interface Order {
   serviceChargeAmount?: number;
   customerEmail?: string;
   customerPhone?: string;
+  customerId?: string; // Link to CRM
   modifications?: OrderModification[];
 
   // Printing tracking
@@ -206,4 +221,26 @@ export interface Table {
   number: string;
   status: TableStatus;
   capacity: number;
+}
+
+export interface Expense {
+  id: string;
+  category: 'REPLENISHMENT' | 'RENT' | 'UTILITIES' | 'REPAIRS' | 'SALARY' | 'MARKETING' | 'OTHER';
+  amount: number;
+  description: string;
+  timestamp: number;
+  userId: string;
+  userName: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  loyaltyPoints: number;
+  creditBalance: number;
+  totalSpent: number;
+  lastVisit?: number;
 }

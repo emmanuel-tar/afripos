@@ -1,6 +1,7 @@
 import { RawMaterial, Supplier, StockTransaction, PurchaseOrder } from '../types';
 
-const MATERIALS_KEY = 'afripos_raw_materials';
+const MATERIALS_KEY = 'afripos_materials';
+const PRODUCTS_KEY = 'afripos_products';
 const SUPPLIERS_KEY = 'afripos_suppliers';
 const TRANSACTIONS_KEY = 'afripos_stock_transactions';
 const POS_KEY = 'afripos_purchase_orders';
@@ -12,6 +13,15 @@ export const getRawMaterials = (): RawMaterial[] => {
 
 export const saveRawMaterials = (materials: RawMaterial[]) => {
     localStorage.setItem(MATERIALS_KEY, JSON.stringify(materials));
+};
+
+export const getProducts = (): any[] => {
+    const data = localStorage.getItem(PRODUCTS_KEY);
+    return data ? JSON.parse(data) : [];
+};
+
+export const saveProducts = (products: any[]): void => {
+    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
 };
 
 export const getSuppliers = (): Supplier[] => {

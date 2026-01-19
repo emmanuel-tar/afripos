@@ -1,9 +1,11 @@
 import { create } from 'zustand';
-import { RawMaterial, Supplier, StockTransaction, StockTransactionType, PurchaseOrder } from '../types';
+import { RawMaterial, Supplier, StockTransaction, StockTransactionType, PurchaseOrder, Product } from '../types';
 import * as inventoryDb from '../services/inventoryDb';
+import { MOCK_MATERIALS, MOCK_PRODUCTS } from '../constants';
 
 interface InventoryState {
     materials: RawMaterial[];
+    products: Product[];
     suppliers: Supplier[];
     transactions: StockTransaction[];
     purchaseOrders: PurchaseOrder[];
@@ -11,6 +13,9 @@ interface InventoryState {
 
     // Actions
     fetchInventory: () => void;
+    addProduct: (product: Product) => void;
+    updateProduct: (product: Product) => void;
+    deleteProduct: (id: string) => void;
     addMaterial: (material: RawMaterial) => void;
     updateMaterial: (material: RawMaterial) => void;
     deleteMaterial: (id: string) => void;
@@ -33,6 +38,7 @@ interface InventoryState {
 
 export const useInventoryStore = create<InventoryState>((set, get) => ({
     materials: [],
+    products: [],
     suppliers: [],
     transactions: [],
     purchaseOrders: [],
@@ -40,11 +46,40 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
 
     fetchInventory: () => {
         set({ isLoading: true });
-        const materials = inventoryDb.getRawMaterials();
+        let materials = inventoryDb.getRawMaterials();
+        let products = inventoryDb.getProducts();
+
+        if (materials.length === 0) {
+            materials = MOCK_MATERIALS;
+            inventoryDb.saveRawMaterials(materials);
+        }
+        if (products.length === 0) {
+            products = MOCK_PRODUCTS;
+            inventoryDb.saveProducts(products);
+        }
+
         const suppliers = inventoryDb.getSuppliers();
         const transactions = inventoryDb.getStockTransactions();
         const purchaseOrders = inventoryDb.getPurchaseOrders();
-        set({ materials, suppliers, transactions, purchaseOrders, isLoading: false });
+        set({ materials, products, suppliers, transactions, purchaseOrders, isLoading: false });
+    },
+
+    addProduct: (product) => {
+        const newProducts = [...get().products, product];
+        inventoryDb.saveProducts(newProducts);
+        set({ products: newProducts });
+    },
+
+    updateProduct: (product) => {
+        const newProducts = get().products.map(p => p.id === product.id ? product : p);
+        inventoryDb.saveProducts(newProducts);
+        set({ products: newProducts });
+    },
+
+    deleteProduct: (id) => {
+        const newProducts = get().products.filter(p => p.id !== id);
+        inventoryDb.saveProducts(newProducts);
+        set({ products: newProducts });
     },
 
     addMaterial: (material) => {

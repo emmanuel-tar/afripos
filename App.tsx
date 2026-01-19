@@ -3,6 +3,9 @@ import { AppView, Order } from './types';
 import { LoginView } from './views/LoginView';
 import MenuView from './views/MenuView';
 import InventoryView from './views/InventoryView';
+import FinanceView from './views/FinanceView';
+import StaffView from './views/StaffView';
+import CustomerView from './views/CustomerView';
 import FloorMapView from './views/FloorMapView';
 import StationDisplayView from './views/StationDisplayView';
 import SettingsView from './views/SettingsView';
@@ -191,6 +194,9 @@ const App: React.FC = () => {
         )}
         {view === AppView.INVENTORY && <InventoryView onBack={() => setView(AppView.DASHBOARD)} />}
         {view === AppView.SETTINGS && user && <SettingsView onBack={() => setView(AppView.DASHBOARD)} currentUser={user} />}
+        {view === AppView.FINANCE && <FinanceView onBack={() => setView(AppView.DASHBOARD)} />}
+        {view === AppView.HR && <StaffView onBack={() => setView(AppView.DASHBOARD)} />}
+        {view === AppView.CRM && <CustomerView onBack={() => setView(AppView.DASHBOARD)} />}
       </div>
       <Toaster position="top-right" richColors />
     </div>
