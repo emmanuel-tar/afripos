@@ -14,10 +14,16 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedTableNum, setSelectedTableNum] = useState<string | null>(null);
 
+  const [activeOrders, setActiveOrders] = useState<Order[]>([]);
+
   // Fetch live orders to determine table occupancy
-  const activeOrders = useMemo(() => {
-    const all = getOrders();
-    return all.filter(o => o.status !== 'completed' && o.status !== 'cancelled' && o.tableNumber);
+  React.useEffect(() => {
+    const fetchOrders = async () => {
+      const all = await getOrders();
+      const filtered = all.filter(o => o.status !== 'completed' && o.status !== 'cancelled' && o.tableNumber);
+      setActiveOrders(filtered);
+    };
+    fetchOrders();
   }, []);
 
   const getTableData = (tableNumber: string) => {
@@ -31,7 +37,7 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
   };
 
   const getStatusColor = (status: TableStatus) => {
-    switch(status) {
+    switch (status) {
       case 'occupied': return 'bg-indigo-600 text-white shadow-indigo-200 ring-4 ring-indigo-50';
       case 'reserved': return 'bg-amber-500 text-white';
       case 'dirty': return 'bg-slate-400 text-white';
@@ -77,7 +83,7 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
         {MOCK_TABLES.map(table => {
           const status = getStatus(table.number);
           const order = getTableData(table.number);
-          
+
           return (
             <button
               key={table.id}
@@ -114,7 +120,7 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
                 <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 mt-1">Order Details & Billing</div>
               </div>
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={handlePrintBill}
                   className="p-3 bg-white/20 hover:bg-white/30 rounded-2xl transition-all flex items-center gap-2"
                   title="Print Bill"
@@ -175,14 +181,14 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
             </div>
 
             <div className="p-10 bg-slate-50 border-t border-slate-100 flex gap-4">
-              <button 
+              <button
                 onClick={() => onSelectTable(selectedTableNum!)}
                 className="flex-1 py-5 bg-white border-2 border-slate-200 text-slate-800 rounded-3xl font-black uppercase tracking-widest shadow-sm hover:border-indigo-600 transition-all flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                 Add Items
               </button>
-              <button 
+              <button
                 onClick={() => onSettleTable(selectedOrder)}
                 className="flex-1 py-5 bg-indigo-600 text-white rounded-3xl font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
               >
@@ -193,32 +199,32 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
           </div>
         </div>
       )}
-      
+
       {/* Hidden Print Container for Summary prints */}
       {selectedOrder && (
-          <div id="print-receipt" className="hidden print:block font-mono text-[12px] leading-tight">
-            <div className="text-center mb-4">
-              <h2 className="text-lg font-black uppercase">AFRI POS</h2>
-              <div className="text-xs">PRO-FORMA BILL</div>
-              <div className="text-[10px]">{new Date().toLocaleString()}</div>
-              <div className="border-b border-dashed border-black my-2"></div>
-              <div className="font-black">TABLE: {selectedTableNum}</div>
-              <div>CASHIER: {selectedOrder.cashierName}</div>
-            </div>
-            <div className="space-y-1 mb-4">
-              {selectedOrder.items.map((item, i) => (
-                <div key={i} className="flex justify-between">
-                  <span>{item.quantity}x {item.name}</span>
-                  <span>{(item.price * item.quantity).toLocaleString()}</span>
-                </div>
-              ))}
-            </div>
-            <div className="border-t border-dashed border-black pt-2 flex justify-between font-black text-base">
-              <span>TOTAL DUE:</span>
-              <span>{CURRENCY}{selectedOrder.total.toLocaleString()}</span>
-            </div>
-            <div className="text-center mt-6 text-[10px] uppercase font-black">Not a valid tax receipt</div>
+        <div id="print-receipt" className="hidden print:block font-mono text-[12px] leading-tight">
+          <div className="text-center mb-4">
+            <h2 className="text-lg font-black uppercase">AFRI POS</h2>
+            <div className="text-xs">PRO-FORMA BILL</div>
+            <div className="text-[10px]">{new Date().toLocaleString()}</div>
+            <div className="border-b border-dashed border-black my-2"></div>
+            <div className="font-black">TABLE: {selectedTableNum}</div>
+            <div>CASHIER: {selectedOrder.cashierName}</div>
           </div>
+          <div className="space-y-1 mb-4">
+            {selectedOrder.items.map((item, i) => (
+              <div key={i} className="flex justify-between">
+                <span>{item.quantity}x {item.name}</span>
+                <span>{(item.price * item.quantity).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-dashed border-black pt-2 flex justify-between font-black text-base">
+            <span>TOTAL DUE:</span>
+            <span>{CURRENCY}{selectedOrder.total.toLocaleString()}</span>
+          </div>
+          <div className="text-center mt-6 text-[10px] uppercase font-black">Not a valid tax receipt</div>
+        </div>
       )}
     </div>
   );

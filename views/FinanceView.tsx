@@ -25,8 +25,12 @@ const FinanceView: React.FC<FinanceViewProps> = ({ onBack }) => {
     });
 
     useEffect(() => {
-        fetchExpenses();
-        setOrders(getOrders());
+        const loadFinanceData = async () => {
+            await fetchExpenses();
+            const allOrders = await getOrders();
+            setOrders(allOrders);
+        };
+        loadFinanceData();
     }, [fetchExpenses]);
 
     const completedOrders = useMemo(() => orders.filter(o => o.status === 'completed'), [orders]);

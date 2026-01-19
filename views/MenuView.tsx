@@ -68,12 +68,17 @@ const MenuView: React.FC<MenuViewProps> = ({
 
   // Cleanup on mount/unmount and load order
   useEffect(() => {
-    if (!isFastOrder) {
-      const existing = getActiveTableOrder(tableNumber);
-      // We should ideally define a 'setAll' action in store, but this works for now
-      // This part is tricky because we are mixing local DB service with Zustand
-      // In a real app, Zustand should probably load from DB on init
-    }
+    const loadExistingOrder = async () => {
+      if (!isFastOrder) {
+        const existing = await getActiveTableOrder(tableNumber);
+        if (existing) {
+          // If we found an existing order for this table, we could hydrate the cart here
+          // For now, this just demonstrates the async call
+          console.log('Found existing order for table:', tableNumber, existing);
+        }
+      }
+    };
+    loadExistingOrder();
   }, [tableNumber, isFastOrder]);
 
   const handleProductClick = (product: Product) => {
@@ -202,7 +207,7 @@ const MenuView: React.FC<MenuViewProps> = ({
       reprintCount: 0
     };
 
-    saveOrder(newOrder);
+    await saveOrder(newOrder);
 
     // Deduct stock
     const allIngredients: { materialId: string, amount: number, unit: string }[] = [];
@@ -219,7 +224,7 @@ const MenuView: React.FC<MenuViewProps> = ({
     });
 
     if (allIngredients.length > 0) {
-      useInventoryStore.getState().deductIngredients(
+      await useInventoryStore.getState().deductIngredients(
         allIngredients,
         newOrder.id,
         user.id,
@@ -263,7 +268,7 @@ const MenuView: React.FC<MenuViewProps> = ({
       printedAt: status === 'preparing' ? Date.now() : undefined,
       reprintCount: 0
     };
-    saveOrder(newOrder);
+    await saveOrder(newOrder);
     setActiveOrderId(newOrder.id);
 
     if (status === 'preparing') {
@@ -283,9 +288,9 @@ const MenuView: React.FC<MenuViewProps> = ({
   };
 
   // Handle print button click
-  const handlePrintClick = () => {
+  const handlePrintClick = async () => {
     if (activeOrderId) {
-      const orders = getOrders();
+      const orders = await getOrders();
       const order = orders.find(o => o.id === activeOrderId);
       if (order) {
         setOrderToPrint(order);
@@ -303,7 +308,7 @@ const MenuView: React.FC<MenuViewProps> = ({
         ...orderToPrint,
         reprintCount: (orderToPrint.reprintCount || 0) + 1
       };
-      saveOrder(updatedOrder);
+      await saveOrder(updatedOrder);
 
       const printed = await printInvoice(updatedOrder, branchSettings);
       if (printed) {
@@ -325,7 +330,7 @@ const MenuView: React.FC<MenuViewProps> = ({
         ...orderToPrint,
         reprintCount: (orderToPrint.reprintCount || 0) + 1
       };
-      saveOrder(updatedOrder);
+      await saveOrder(updatedOrder);
 
       const printed = await printKitchenOrder(updatedOrder, branchSettings);
       if (printed) {

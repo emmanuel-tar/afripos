@@ -16,10 +16,10 @@ export const useFinanceStore = create<FinanceState>((set) => ({
     expenses: [],
     isLoading: false,
 
-    fetchExpenses: () => {
+    fetchExpenses: async () => {
         set({ isLoading: true });
         try {
-            const expenses = financeDb.getExpenses();
+            const expenses = await financeDb.getExpenses();
             set({ expenses, isLoading: false });
         } catch (error) {
             console.error('Failed to fetch expenses:', error);
@@ -27,20 +27,20 @@ export const useFinanceStore = create<FinanceState>((set) => ({
         }
     },
 
-    addExpense: (expense) => {
-        financeDb.saveExpense(expense);
+    addExpense: async (expense) => {
+        await financeDb.saveExpense(expense);
         set((state) => ({ expenses: [...state.expenses, expense] }));
     },
 
-    updateExpense: (expense) => {
-        financeDb.saveExpense(expense);
+    updateExpense: async (expense) => {
+        await financeDb.saveExpense(expense);
         set((state) => ({
             expenses: state.expenses.map((e) => (e.id === expense.id ? expense : e)),
         }));
     },
 
-    removeExpense: (id) => {
-        financeDb.deleteExpense(id);
+    removeExpense: async (id) => {
+        await financeDb.deleteExpense(id);
         set((state) => ({
             expenses: state.expenses.filter((e) => e.id !== id),
         }));

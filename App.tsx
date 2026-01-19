@@ -14,6 +14,7 @@ import { getSyncStatus } from './services/db';
 import { useAppStore } from './stores/useAppStore';
 import { useCartStore } from './stores/useCartStore';
 import { Toaster } from 'sonner';
+import { migrateFromLocalStorage } from './services/offlineDb';
 
 const App: React.FC = () => {
   const { view, viewParams, setView, user, currentBranch, isOnline, setIsOnline, error, setError } = useAppStore();
@@ -56,6 +57,11 @@ const App: React.FC = () => {
       if ('vibrate' in navigator) navigator.vibrate([100, 50, 100]);
     }
   }, [error, playErrorSound]);
+
+  // Migrate database from localStorage to Dexie on startup
+  useEffect(() => {
+    migrateFromLocalStorage();
+  }, []);
 
   const handleFastOrder = () => {
     setTableNumber('FAST');
