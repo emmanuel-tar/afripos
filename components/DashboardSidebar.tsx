@@ -16,6 +16,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 }) => {
     const { setView, currentBranch, logout } = useAppStore();
     const { setTableNumber } = useCartStore();
+    const [isSalesOpen, setIsSalesOpen] = React.useState(true);
 
     const handleFastOrder = () => {
         setTableNumber('FAST');
@@ -23,77 +24,98 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     };
 
     return (
-        <div className="w-64 bg-slate-900 p-4 flex flex-col gap-3 shadow-2xl z-20">
-            <div className="mb-8 p-6 bg-white/5 rounded-[2rem] border border-white/10 text-center">
-                <div className="text-white/30 text-[9px] uppercase font-black tracking-widest mb-2">Location</div>
-                <div className="text-white font-black text-sm uppercase">{currentBranch?.name}</div>
+        <div className="w-64 bg-slate-900 p-4 flex flex-col gap-2 shadow-2xl z-20 overflow-y-auto">
+            <div className="mb-6 p-6 bg-white/5 rounded-[2rem] border border-white/10 text-center">
+                <div className="text-white/30 text-[9px] uppercase font-black tracking-widest mb-1">Location</div>
+                <div className="text-white font-black text-xs uppercase">{currentBranch?.name}</div>
             </div>
 
-            <button onClick={handleFastOrder} className="flex items-center gap-4 p-5 rounded-[1.5rem] bg-indigo-600 text-white font-black hover:bg-indigo-700 transition-all shadow-xl active:scale-95 group">
-                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center group-hover:rotate-12 transition-transform">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                </div>
-                Quick Sell
-            </button>
-
-            <button onClick={() => setView(AppView.FLOOR_MAP)} className="flex items-center gap-4 p-5 rounded-[1.5rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                </div>
-                Tables
-            </button>
-
-            {canAccessKDS && (
-                <button onClick={() => setView(AppView.STATION_DISPLAY)} className="flex items-center gap-4 p-5 rounded-[1.5rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+            {/* Sales Group */}
+            <div className="flex flex-col gap-1">
+                <button
+                    onClick={() => setIsSalesOpen(!isSalesOpen)}
+                    className="flex justify-between items-center w-full p-4 rounded-2xl bg-white/5 text-white/50 font-black uppercase tracking-widest text-[10px] hover:text-white transition-all group"
+                >
+                    <div className="flex items-center gap-3">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                        Sales & POS
                     </div>
-                    Kitchen
+                    <svg className={`w-4 h-4 transition-transform duration-300 ${isSalesOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
                 </button>
-            )}
 
-            {canAccessInventory && (
-                <button onClick={() => setView(AppView.INVENTORY)} className="flex items-center gap-4 p-5 rounded-[1.5rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                    </div>
-                    Stock
-                </button>
-            )}
+                <div className={`flex flex-col gap-1 transition-all duration-300 overflow-hidden ${isSalesOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+                    <button onClick={handleFastOrder} className="flex items-center gap-4 p-4 rounded-[1.2rem] bg-indigo-600 text-white font-black hover:bg-indigo-700 transition-all shadow-lg active:scale-95 group">
+                        <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center group-hover:rotate-12 transition-transform">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        </div>
+                        <span className="text-sm">Quick Sell</span>
+                    </button>
 
-            {canAccessSettings && (
-                <>
-                    <button onClick={() => setView(AppView.FINANCE)} className="flex items-center gap-4 p-5 rounded-[1.5rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95">
-                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <button onClick={() => setView(AppView.FLOOR_MAP)} className="flex items-center gap-4 p-4 rounded-[1.2rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95 group">
+                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                         </div>
-                        Finance
+                        <span className="text-sm">Floor Map</span>
                     </button>
-                    <button onClick={() => setView(AppView.HR)} className="flex items-center gap-4 p-5 rounded-[1.5rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95">
-                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                        </div>
-                        Staff
-                    </button>
-                    <button onClick={() => setView(AppView.CRM)} className="flex items-center gap-4 p-5 rounded-[1.5rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95">
-                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                        </div>
-                        Customers
-                    </button>
-                    <button onClick={() => setView(AppView.SETTINGS)} className="flex items-center gap-4 p-5 rounded-[1.5rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95">
-                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
-                        </div>
-                        Admin
-                    </button>
-                </>
-            )}
 
-            <div className="mt-auto">
-                <button onClick={logout} className="w-full flex items-center gap-4 p-5 rounded-[1.5rem] text-red-500 hover:bg-red-500/10 transition-all font-black uppercase active:scale-95">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                    Logout
+                    {canAccessKDS && (
+                        <button onClick={() => setView(AppView.STATION_DISPLAY)} className="flex items-center gap-4 p-4 rounded-[1.2rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95 group">
+                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                            </div>
+                            <span className="text-sm">Kitchen Display</span>
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Operations Group */}
+            <div className="mt-4 flex flex-col gap-1">
+                <div className="p-4 text-white/20 font-black uppercase tracking-widest text-[9px]">Management</div>
+
+                {canAccessInventory && (
+                    <button onClick={() => setView(AppView.INVENTORY)} className="flex items-center gap-4 p-4 rounded-[1.2rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95 group">
+                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                        </div>
+                        <span className="text-sm">Inventory</span>
+                    </button>
+                )}
+
+                {canAccessSettings && (
+                    <>
+                        <button onClick={() => setView(AppView.FINANCE)} className="flex items-center gap-4 p-4 rounded-[1.2rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95 group">
+                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            </div>
+                            <span className="text-sm">Finance</span>
+                        </button>
+                        <button onClick={() => setView(AppView.HR)} className="flex items-center gap-4 p-4 rounded-[1.2rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95 group">
+                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                            </div>
+                            <span className="text-sm">HR & Staff</span>
+                        </button>
+                        <button onClick={() => setView(AppView.CRM)} className="flex items-center gap-4 p-4 rounded-[1.2rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95 group">
+                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                            </div>
+                            <span className="text-sm">Customers</span>
+                        </button>
+                        <button onClick={() => setView(AppView.SETTINGS)} className="flex items-center gap-4 p-4 rounded-[1.2rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95 group">
+                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
+                            </div>
+                            <span className="text-sm">Settings</span>
+                        </button>
+                    </>
+                )}
+            </div>
+
+            <div className="mt-auto pt-4 border-t border-white/5">
+                <button onClick={logout} className="w-full flex items-center gap-4 p-4 rounded-[1.2rem] text-red-500 hover:bg-red-500/10 transition-all font-black uppercase active:scale-95 group">
+                    <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    <span className="text-sm">Logout</span>
                 </button>
             </div>
         </div>
