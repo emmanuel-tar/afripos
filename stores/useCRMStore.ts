@@ -18,10 +18,10 @@ export const useCRMStore = create<CRMState>((set, get) => ({
     customers: [],
     isLoading: false,
 
-    fetchCustomers: () => {
+    fetchCustomers: async () => {
         set({ isLoading: true });
         try {
-            const customers = crmDb.getCustomers();
+            const customers = await crmDb.getCustomers();
             set({ customers, isLoading: false });
         } catch (error) {
             console.error('Failed to fetch customers:', error);
@@ -29,43 +29,43 @@ export const useCRMStore = create<CRMState>((set, get) => ({
         }
     },
 
-    addCustomer: (customer) => {
-        crmDb.saveCustomer(customer);
+    addCustomer: async (customer) => {
+        await crmDb.saveCustomer(customer);
         set(state => ({ customers: [...state.customers, customer] }));
     },
 
-    updateCustomer: (customer) => {
-        crmDb.saveCustomer(customer);
+    updateCustomer: async (customer) => {
+        await crmDb.saveCustomer(customer);
         set(state => ({
             customers: state.customers.map(c => c.id === customer.id ? customer : c)
         }));
     },
 
-    removeCustomer: (id) => {
-        crmDb.deleteCustomer(id);
+    removeCustomer: async (id) => {
+        await crmDb.deleteCustomer(id);
         set(state => ({
             customers: state.customers.filter(c => c.id !== id)
         }));
     },
 
-    awardPoints: (customerId, points) => {
+    awardPoints: async (customerId, points) => {
         const customers = get().customers;
         const index = customers.findIndex(c => c.id === customerId);
         if (index >= 0) {
             const updated = { ...customers[index], loyaltyPoints: (customers[index].loyaltyPoints || 0) + points };
-            crmDb.saveCustomer(updated);
+            await crmDb.saveCustomer(updated);
             set(state => ({
                 customers: state.customers.map(c => c.id === customerId ? updated : c)
             }));
         }
     },
 
-    updateBalance: (customerId, amount) => {
+    updateBalance: async (customerId, amount) => {
         const customers = get().customers;
         const index = customers.findIndex(c => c.id === customerId);
         if (index >= 0) {
             const updated = { ...customers[index], creditBalance: (customers[index].creditBalance || 0) + amount };
-            crmDb.saveCustomer(updated);
+            await crmDb.saveCustomer(updated);
             set(state => ({
                 customers: state.customers.map(c => c.id === customerId ? updated : c)
             }));

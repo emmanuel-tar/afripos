@@ -1,32 +1,22 @@
 
 import { Shift, User } from '../types';
-
-const SHIFTS_KEY = 'afripos_shifts';
-const STAFF_KEY = 'afripos_staff';
+import { db } from './offlineDb';
 
 export const hrDb = {
-    getShifts: (): Shift[] => {
-        const data = localStorage.getItem(SHIFTS_KEY);
-        return data ? JSON.parse(data) : [];
+    getShifts: async (): Promise<Shift[]> => {
+        return await db.shifts.toArray();
     },
 
-    saveShift: (shift: Shift): void => {
-        const shifts = hrDb.getShifts();
-        const index = shifts.findIndex(s => s.id === shift.id);
-        if (index >= 0) {
-            shifts[index] = shift;
-        } else {
-            shifts.push(shift);
-        }
-        localStorage.setItem(SHIFTS_KEY, JSON.stringify(shifts));
+    saveShift: async (shift: Shift): Promise<void> => {
+        await db.shifts.put(shift);
     },
 
-    getStaff: (): User[] => {
-        const data = localStorage.getItem(STAFF_KEY);
-        return data ? JSON.parse(data) : [];
+    getStaff: async (): Promise<User[]> => {
+        return await db.staff.toArray();
     },
 
-    saveStaff: (staff: User[]): void => {
-        localStorage.setItem(STAFF_KEY, JSON.stringify(staff));
+    saveStaff: async (staff: User[]): Promise<void> => {
+        await db.staff.clear();
+        await db.staff.bulkPut(staff);
     }
 };

@@ -1,28 +1,17 @@
 
 import { Expense } from '../types';
-
-const EXPENSES_KEY = 'afripos_expenses';
+import { db } from './offlineDb';
 
 export const financeDb = {
-    getExpenses: (): Expense[] => {
-        const data = localStorage.getItem(EXPENSES_KEY);
-        return data ? JSON.parse(data) : [];
+    getExpenses: async (): Promise<Expense[]> => {
+        return await db.expenses.toArray();
     },
 
-    saveExpense: (expense: Expense): void => {
-        const expenses = financeDb.getExpenses();
-        const index = expenses.findIndex(e => e.id === expense.id);
-        if (index >= 0) {
-            expenses[index] = expense;
-        } else {
-            expenses.push(expense);
-        }
-        localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
+    saveExpense: async (expense: Expense): Promise<void> => {
+        await db.expenses.put(expense);
     },
 
-    deleteExpense: (id: string): void => {
-        const expenses = financeDb.getExpenses();
-        const filtered = expenses.filter(e => e.id !== id);
-        localStorage.setItem(EXPENSES_KEY, JSON.stringify(filtered));
+    deleteExpense: async (id: string): Promise<void> => {
+        await db.expenses.delete(id);
     }
 };

@@ -1,63 +1,48 @@
+
 import { RawMaterial, Supplier, StockTransaction, PurchaseOrder } from '../types';
+import { db } from './offlineDb';
 
-const MATERIALS_KEY = 'afripos_materials';
-const PRODUCTS_KEY = 'afripos_products';
-const SUPPLIERS_KEY = 'afripos_suppliers';
-const TRANSACTIONS_KEY = 'afripos_stock_transactions';
-const POS_KEY = 'afripos_purchase_orders';
-
-export const getRawMaterials = (): RawMaterial[] => {
-    const data = localStorage.getItem(MATERIALS_KEY);
-    return data ? JSON.parse(data) : [];
+export const getRawMaterials = async (): Promise<RawMaterial[]> => {
+    return await db.materials.toArray();
 };
 
-export const saveRawMaterials = (materials: RawMaterial[]) => {
-    localStorage.setItem(MATERIALS_KEY, JSON.stringify(materials));
+export const saveRawMaterials = async (materials: RawMaterial[]) => {
+    await db.materials.bulkPut(materials);
 };
 
-export const getProducts = (): any[] => {
-    const data = localStorage.getItem(PRODUCTS_KEY);
-    return data ? JSON.parse(data) : [];
+export const getProducts = async (): Promise<any[]> => {
+    return await db.products.toArray();
 };
 
-export const saveProducts = (products: any[]): void => {
-    localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products));
+export const saveProducts = async (products: any[]): Promise<void> => {
+    await db.products.bulkPut(products);
 };
 
-export const getSuppliers = (): Supplier[] => {
-    const data = localStorage.getItem(SUPPLIERS_KEY);
-    return data ? JSON.parse(data) : [];
+export const getSuppliers = async (): Promise<Supplier[]> => {
+    return await db.suppliers.toArray();
 };
 
-export const saveSuppliers = (suppliers: Supplier[]) => {
-    localStorage.setItem(SUPPLIERS_KEY, JSON.stringify(suppliers));
+export const saveSuppliers = async (suppliers: Supplier[]) => {
+    await db.suppliers.bulkPut(suppliers);
 };
 
-export const getStockTransactions = (): StockTransaction[] => {
-    const data = localStorage.getItem(TRANSACTIONS_KEY);
-    return data ? JSON.parse(data) : [];
+export const getStockTransactions = async (): Promise<StockTransaction[]> => {
+    return await db.transactions.toArray();
 };
 
-export const saveStockTransaction = (transaction: StockTransaction) => {
-    const transactions = getStockTransactions();
-    transactions.push(transaction);
-    localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(transactions));
+export const saveStockTransaction = async (transaction: StockTransaction) => {
+    await db.transactions.put(transaction);
 };
 
-export const getTransactionsForItem = (itemId: string): StockTransaction[] => {
-    return getStockTransactions().filter(t => t.itemId === itemId);
+export const getTransactionsForItem = async (itemId: string): Promise<StockTransaction[]> => {
+    return await db.transactions.where('itemId').equals(itemId).toArray();
 };
 
 // Purchase Orders
-export const getPurchaseOrders = (): PurchaseOrder[] => {
-    const data = localStorage.getItem(POS_KEY);
-    return data ? JSON.parse(data) : [];
+export const getPurchaseOrders = async (): Promise<PurchaseOrder[]> => {
+    return await db.purchaseOrders.toArray();
 };
 
-export const savePurchaseOrder = (po: PurchaseOrder): void => {
-    const pos = getPurchaseOrders();
-    const index = pos.findIndex(p => p.id === po.id);
-    if (index >= 0) pos[index] = po;
-    else pos.push(po);
-    localStorage.setItem(POS_KEY, JSON.stringify(pos));
+export const savePurchaseOrder = async (po: PurchaseOrder): Promise<void> => {
+    await db.purchaseOrders.put(po);
 };

@@ -21,15 +21,15 @@ export const useHRStore = create<HRState>((set, get) => ({
     shifts: [],
     isLoading: false,
 
-    fetchHRData: () => {
+    fetchHRData: async () => {
         set({ isLoading: true });
         try {
-            let staff = hrDb.getStaff();
+            let staff = await hrDb.getStaff();
             if (staff.length === 0) {
                 staff = DEFAULT_STAFF;
-                hrDb.saveStaff(staff);
+                await hrDb.saveStaff(staff);
             }
-            const shifts = hrDb.getShifts();
+            const shifts = await hrDb.getShifts();
             set({ staff, shifts, isLoading: false });
         } catch (error) {
             console.error('Failed to fetch HR data:', error);
@@ -37,25 +37,25 @@ export const useHRStore = create<HRState>((set, get) => ({
         }
     },
 
-    addStaff: (user) => {
+    addStaff: async (user) => {
         const newStaff = [...get().staff, user];
-        hrDb.saveStaff(newStaff);
+        await hrDb.saveStaff(newStaff);
         set({ staff: newStaff });
     },
 
-    updateStaff: (user) => {
+    updateStaff: async (user) => {
         const newStaff = get().staff.map(s => s.id === user.id ? user : s);
-        hrDb.saveStaff(newStaff);
+        await hrDb.saveStaff(newStaff);
         set({ staff: newStaff });
     },
 
-    removeStaff: (id) => {
+    removeStaff: async (id) => {
         const newStaff = get().staff.filter(s => s.id !== id);
-        hrDb.saveStaff(newStaff);
+        await hrDb.saveStaff(newStaff);
         set({ staff: newStaff });
     },
 
-    clockIn: (userId, userName) => {
+    clockIn: async (userId, userName) => {
         const shift: Shift = {
             id: `shift-${Date.now()}`,
             userId,
@@ -63,16 +63,16 @@ export const useHRStore = create<HRState>((set, get) => ({
             startTime: Date.now(),
             status: 'OPEN'
         };
-        hrDb.saveShift(shift);
+        await hrDb.saveShift(shift);
         set(state => ({ shifts: [...state.shifts, shift] }));
     },
 
-    clockOut: (shiftId) => {
+    clockOut: async (shiftId) => {
         const shifts = get().shifts;
         const index = shifts.findIndex(s => s.id === shiftId);
         if (index >= 0) {
             const updatedShift = { ...shifts[index], endTime: Date.now(), status: 'CLOSED' as const };
-            hrDb.saveShift(updatedShift);
+            await hrDb.saveShift(updatedShift);
             set(state => ({
                 shifts: state.shifts.map(s => s.id === shiftId ? updatedShift : s)
             }));

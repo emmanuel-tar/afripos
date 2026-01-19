@@ -44,103 +44,108 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     purchaseOrders: [],
     isLoading: false,
 
-    fetchInventory: () => {
+    fetchInventory: async () => {
         set({ isLoading: true });
-        let materials = inventoryDb.getRawMaterials();
-        let products = inventoryDb.getProducts();
+        try {
+            let materials = await inventoryDb.getRawMaterials();
+            let products = await inventoryDb.getProducts();
 
-        if (materials.length === 0) {
-            materials = MOCK_MATERIALS;
-            inventoryDb.saveRawMaterials(materials);
-        }
-        if (products.length === 0) {
-            products = MOCK_PRODUCTS;
-            inventoryDb.saveProducts(products);
-        }
+            if (materials.length === 0) {
+                materials = MOCK_MATERIALS;
+                await inventoryDb.saveRawMaterials(materials);
+            }
+            if (products.length === 0) {
+                products = MOCK_PRODUCTS;
+                await inventoryDb.saveProducts(products);
+            }
 
-        const suppliers = inventoryDb.getSuppliers();
-        const transactions = inventoryDb.getStockTransactions();
-        const purchaseOrders = inventoryDb.getPurchaseOrders();
-        set({ materials, products, suppliers, transactions, purchaseOrders, isLoading: false });
+            const suppliers = await inventoryDb.getSuppliers();
+            const transactions = await inventoryDb.getStockTransactions();
+            const purchaseOrders = await inventoryDb.getPurchaseOrders();
+            set({ materials, products, suppliers, transactions, purchaseOrders, isLoading: false });
+        } catch (error) {
+            console.error('Failed to fetch inventory:', error);
+            set({ isLoading: false });
+        }
     },
 
-    addProduct: (product) => {
+    addProduct: async (product) => {
         const newProducts = [...get().products, product];
-        inventoryDb.saveProducts(newProducts);
+        await inventoryDb.saveProducts(newProducts);
         set({ products: newProducts });
     },
 
-    updateProduct: (product) => {
+    updateProduct: async (product) => {
         const newProducts = get().products.map(p => p.id === product.id ? product : p);
-        inventoryDb.saveProducts(newProducts);
+        await inventoryDb.saveProducts(newProducts);
         set({ products: newProducts });
     },
 
-    deleteProduct: (id) => {
+    deleteProduct: async (id) => {
         const newProducts = get().products.filter(p => p.id !== id);
-        inventoryDb.saveProducts(newProducts);
+        await inventoryDb.saveProducts(newProducts);
         set({ products: newProducts });
     },
 
-    addMaterial: (material) => {
+    addMaterial: async (material) => {
         const newMaterials = [...get().materials, material];
-        inventoryDb.saveRawMaterials(newMaterials);
+        await inventoryDb.saveRawMaterials(newMaterials);
         set({ materials: newMaterials });
     },
 
-    updateMaterial: (material) => {
+    updateMaterial: async (material) => {
         const newMaterials = get().materials.map(m => m.id === material.id ? material : m);
-        inventoryDb.saveRawMaterials(newMaterials);
+        await inventoryDb.saveRawMaterials(newMaterials);
         set({ materials: newMaterials });
     },
 
-    deleteMaterial: (id) => {
+    deleteMaterial: async (id) => {
         const newMaterials = get().materials.filter(m => m.id !== id);
-        inventoryDb.saveRawMaterials(newMaterials);
+        await inventoryDb.saveRawMaterials(newMaterials);
         set({ materials: newMaterials });
     },
 
-    addSupplier: (supplier) => {
+    addSupplier: async (supplier) => {
         const newSuppliers = [...get().suppliers, supplier];
-        inventoryDb.saveSuppliers(newSuppliers);
+        await inventoryDb.saveSuppliers(newSuppliers);
         set({ suppliers: newSuppliers });
     },
 
-    updateSupplier: (supplier) => {
+    updateSupplier: async (supplier) => {
         const newSuppliers = get().suppliers.map(s => s.id === supplier.id ? supplier : s);
-        inventoryDb.saveSuppliers(newSuppliers);
+        await inventoryDb.saveSuppliers(newSuppliers);
         set({ suppliers: newSuppliers });
     },
 
-    deleteSupplier: (id) => {
+    deleteSupplier: async (id) => {
         const newSuppliers = get().suppliers.filter(s => s.id !== id);
-        inventoryDb.saveSuppliers(newSuppliers);
+        await inventoryDb.saveSuppliers(newSuppliers);
         set({ suppliers: newSuppliers });
     },
 
-    recordTransaction: (transactionData) => {
+    recordTransaction: async (transactionData) => {
         const transaction: StockTransaction = {
             ...transactionData,
             id: `trx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             timestamp: Date.now(),
         };
-        inventoryDb.saveStockTransaction(transaction);
+        await inventoryDb.saveStockTransaction(transaction);
         set({ transactions: [...get().transactions, transaction] });
     },
 
-    deductIngredients: (ingredients, orderId, userId, userName) => {
+    deductIngredients: async (ingredients, orderId, userId, userName) => {
         const { materials, recordTransaction, updateMaterial } = get();
 
-        ingredients.forEach(ing => {
+        for (const ing of ingredients) {
             const material = materials.find(m => m.id === ing.materialId);
             if (material) {
                 const previousStock = material.quantity;
                 const newStock = previousStock - ing.amount;
 
                 const updatedMaterial = { ...material, quantity: newStock, lastUsed: Date.now() };
-                updateMaterial(updatedMaterial);
+                await updateMaterial(updatedMaterial);
 
-                recordTransaction({
+                await recordTransaction({
                     itemId: ing.materialId,
                     itemType: 'RAW_MATERIAL',
                     type: 'SALE',
@@ -153,25 +158,25 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
                     reason: `Auto-deduction for order ${orderId}`
                 });
             }
-        });
+        }
     },
 
-    fetchPurchaseOrders: () => {
-        const purchaseOrders = inventoryDb.getPurchaseOrders();
+    fetchPurchaseOrders: async () => {
+        const purchaseOrders = await inventoryDb.getPurchaseOrders();
         set({ purchaseOrders });
     },
 
-    createPurchaseOrder: (po) => {
-        inventoryDb.savePurchaseOrder(po);
+    createPurchaseOrder: async (po) => {
+        await inventoryDb.savePurchaseOrder(po);
         set(state => ({ purchaseOrders: [po, ...state.purchaseOrders] }));
     },
 
-    updatePurchaseOrder: (po) => {
-        inventoryDb.savePurchaseOrder(po);
+    updatePurchaseOrder: async (po) => {
+        await inventoryDb.savePurchaseOrder(po);
         set(state => ({ purchaseOrders: state.purchaseOrders.map(p => p.id === po.id ? po : p) }));
     },
 
-    receivePurchaseOrder: (poId, userId, userName) => {
+    receivePurchaseOrder: async (poId, userId, userName) => {
         const { purchaseOrders, updatePurchaseOrder, updateMaterial, recordTransaction, materials } = get();
         const po = purchaseOrders.find(p => p.id === poId);
 
@@ -183,18 +188,18 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
                 receivedBy: userName
             };
 
-            updatePurchaseOrder(updatedPo);
+            await updatePurchaseOrder(updatedPo);
 
             // Update stock for each item
-            po.items.forEach(item => {
+            for (const item of po.items) {
                 const material = materials.find(m => m.id === item.materialId);
                 if (material) {
                     const previousStock = material.quantity;
                     const newStock = previousStock + item.quantity;
 
-                    updateMaterial({ ...material, quantity: newStock });
+                    await updateMaterial({ ...material, quantity: newStock });
 
-                    recordTransaction({
+                    await recordTransaction({
                         itemId: item.materialId,
                         itemType: 'RAW_MATERIAL',
                         type: 'PURCHASE',
@@ -209,7 +214,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
                         reason: `PO Received: ${po.poNumber}`
                     });
                 }
-            });
+            }
         }
     }
 }));

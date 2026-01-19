@@ -1,28 +1,17 @@
 
 import { Customer } from '../types';
-
-const CUSTOMERS_KEY = 'afripos_customers';
+import { db } from './offlineDb';
 
 export const crmDb = {
-    getCustomers: (): Customer[] => {
-        const data = localStorage.getItem(CUSTOMERS_KEY);
-        return data ? JSON.parse(data) : [];
+    getCustomers: async (): Promise<Customer[]> => {
+        return await db.customers.toArray();
     },
 
-    saveCustomer: (customer: Customer): void => {
-        const customers = crmDb.getCustomers();
-        const index = customers.findIndex(c => c.id === customer.id);
-        if (index >= 0) {
-            customers[index] = customer;
-        } else {
-            customers.push(customer);
-        }
-        localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
+    saveCustomer: async (customer: Customer): Promise<void> => {
+        await db.customers.put(customer);
     },
 
-    deleteCustomer: (id: string): void => {
-        const customers = crmDb.getCustomers();
-        const filtered = customers.filter(c => c.id !== id);
-        localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(filtered));
+    deleteCustomer: async (id: string): Promise<void> => {
+        await db.customers.delete(id);
     }
 };
