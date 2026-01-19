@@ -1,0 +1,180 @@
+import { create } from 'zustand';
+import { RawMaterial, Supplier, StockTransaction, StockTransactionType, PurchaseOrder } from '../types';
+import * as inventoryDb from '../services/inventoryDb';
+
+interface InventoryState {
+    materials: RawMaterial[];
+    suppliers: Supplier[];
+    transactions: StockTransaction[];
+    purchaseOrders: PurchaseOrder[];
+    isLoading: boolean;
+
+    // Actions
+    fetchInventory: () => void;
+    addMaterial: (material: RawMaterial) => void;
+    updateMaterial: (material: RawMaterial) => void;
+    deleteMaterial: (id: string) => void;
+
+    addSupplier: (supplier: Supplier) => void;
+    updateSupplier: (supplier: Supplier) => void;
+    deleteSupplier: (id: string) => void;
+
+    recordTransaction: (transaction: Omit<StockTransaction, 'id' | 'timestamp'>) => void;
+
+    // Deduction helper
+    deductIngredients: (ingredients: { materialId: string; amount: number; unit: string }[], orderId: string, userId: string, userName: string) => void;
+
+    // PO Actions
+    fetchPurchaseOrders: () => void;
+    createPurchaseOrder: (po: PurchaseOrder) => void;
+    updatePurchaseOrder: (po: PurchaseOrder) => void;
+    receivePurchaseOrder: (poId: string, userId: string, userName: string) => void;
+}
+
+export const useInventoryStore = create<InventoryState>((set, get) => ({
+    materials: [],
+    suppliers: [],
+    transactions: [],
+    purchaseOrders: [],
+    isLoading: false,
+
+    fetchInventory: () => {
+        set({ isLoading: true });
+        const materials = inventoryDb.getRawMaterials();
+        const suppliers = inventoryDb.getSuppliers();
+        const transactions = inventoryDb.getStockTransactions();
+        const purchaseOrders = inventoryDb.getPurchaseOrders();
+        set({ materials, suppliers, transactions, purchaseOrders, isLoading: false });
+    },
+
+    addMaterial: (material) => {
+        const newMaterials = [...get().materials, material];
+        inventoryDb.saveRawMaterials(newMaterials);
+        set({ materials: newMaterials });
+    },
+
+    updateMaterial: (material) => {
+        const newMaterials = get().materials.map(m => m.id === material.id ? material : m);
+        inventoryDb.saveRawMaterials(newMaterials);
+        set({ materials: newMaterials });
+    },
+
+    deleteMaterial: (id) => {
+        const newMaterials = get().materials.filter(m => m.id !== id);
+        inventoryDb.saveRawMaterials(newMaterials);
+        set({ materials: newMaterials });
+    },
+
+    addSupplier: (supplier) => {
+        const newSuppliers = [...get().suppliers, supplier];
+        inventoryDb.saveSuppliers(newSuppliers);
+        set({ suppliers: newSuppliers });
+    },
+
+    updateSupplier: (supplier) => {
+        const newSuppliers = get().suppliers.map(s => s.id === supplier.id ? supplier : s);
+        inventoryDb.saveSuppliers(newSuppliers);
+        set({ suppliers: newSuppliers });
+    },
+
+    deleteSupplier: (id) => {
+        const newSuppliers = get().suppliers.filter(s => s.id !== id);
+        inventoryDb.saveSuppliers(newSuppliers);
+        set({ suppliers: newSuppliers });
+    },
+
+    recordTransaction: (transactionData) => {
+        const transaction: StockTransaction = {
+            ...transactionData,
+            id: `trx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            timestamp: Date.now(),
+        };
+        inventoryDb.saveStockTransaction(transaction);
+        set({ transactions: [...get().transactions, transaction] });
+    },
+
+    deductIngredients: (ingredients, orderId, userId, userName) => {
+        const { materials, recordTransaction, updateMaterial } = get();
+
+        ingredients.forEach(ing => {
+            const material = materials.find(m => m.id === ing.materialId);
+            if (material) {
+                const previousStock = material.quantity;
+                const newStock = previousStock - ing.amount;
+
+                const updatedMaterial = { ...material, quantity: newStock, lastUsed: Date.now() };
+                updateMaterial(updatedMaterial);
+
+                recordTransaction({
+                    itemId: ing.materialId,
+                    itemType: 'RAW_MATERIAL',
+                    type: 'SALE',
+                    quantity: ing.amount,
+                    previousStock,
+                    newStock,
+                    userId,
+                    userName,
+                    referenceId: orderId,
+                    reason: `Auto-deduction for order ${orderId}`
+                });
+            }
+        });
+    },
+
+    fetchPurchaseOrders: () => {
+        const purchaseOrders = inventoryDb.getPurchaseOrders();
+        set({ purchaseOrders });
+    },
+
+    createPurchaseOrder: (po) => {
+        inventoryDb.savePurchaseOrder(po);
+        set(state => ({ purchaseOrders: [po, ...state.purchaseOrders] }));
+    },
+
+    updatePurchaseOrder: (po) => {
+        inventoryDb.savePurchaseOrder(po);
+        set(state => ({ purchaseOrders: state.purchaseOrders.map(p => p.id === po.id ? po : p) }));
+    },
+
+    receivePurchaseOrder: (poId, userId, userName) => {
+        const { purchaseOrders, updatePurchaseOrder, updateMaterial, recordTransaction, materials } = get();
+        const po = purchaseOrders.find(p => p.id === poId);
+
+        if (po && po.status !== 'RECEIVED') {
+            const updatedPo: PurchaseOrder = {
+                ...po,
+                status: 'RECEIVED',
+                dateReceived: Date.now(),
+                receivedBy: userName
+            };
+
+            updatePurchaseOrder(updatedPo);
+
+            // Update stock for each item
+            po.items.forEach(item => {
+                const material = materials.find(m => m.id === item.materialId);
+                if (material) {
+                    const previousStock = material.quantity;
+                    const newStock = previousStock + item.quantity;
+
+                    updateMaterial({ ...material, quantity: newStock });
+
+                    recordTransaction({
+                        itemId: item.materialId,
+                        itemType: 'RAW_MATERIAL',
+                        type: 'PURCHASE',
+                        quantity: item.quantity,
+                        previousStock,
+                        newStock,
+                        unitPrice: item.unitPrice,
+                        totalCost: item.total,
+                        userId,
+                        userName,
+                        referenceId: po.id,
+                        reason: `PO Received: ${po.poNumber}`
+                    });
+                }
+            });
+        }
+    }
+}));

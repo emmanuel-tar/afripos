@@ -1,0 +1,5 @@
+{
+  "name": "AfriPOS - African Hospitality Management System",
+  "description": "A robust, offline-first POS system tailored for the African hospitality market, featuring multi-location support, keypad-driven entry, and intelligent menu management.",
+  "requestFramePermissions": []
+}
