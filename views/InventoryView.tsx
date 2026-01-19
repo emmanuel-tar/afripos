@@ -6,6 +6,8 @@ import { useInventoryStore } from '../stores/useInventoryStore';
 import { useAppStore } from '../stores/useAppStore';
 import { saveAs } from 'file-saver';
 import { format } from 'date-fns';
+import { getProductProductionMetrics } from '../utils/inventoryUtils';
+
 import { toast } from 'sonner';
 import ItemHistory from '../components/inventory/ItemHistory';
 import { PurchaseOrderManager } from '../components/inventory/PurchaseOrderManager';
@@ -135,38 +137,11 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
     image: ''
   });
 
-  const getProductProductionMetrics = (product: Partial<Product>) => {
-    if (!product.ingredients || product.ingredients.length === 0) {
-      return { totalCost: 0, status: 'AVAILABLE' as const, scarcityPricing: false, hasZeroStockIngredient: false };
-    }
-    let totalCost = 0;
-    let isUnavailable = false;
-    let isScarce = false;
-    let hasZeroStockIngredient = false;
-    product.ingredients.forEach(ingredient => {
-      const material = materials.find(m => m.id === ingredient.materialId);
-      if (!material || material.quantity < ingredient.amount) isUnavailable = true;
-      if (material && material.quantity === 0) hasZeroStockIngredient = true;
-      if (material) {
-        let ingredientCost = material.costPerUnit * ingredient.amount;
-        if (material.quantity < ingredient.amount * LOW_STOCK_THRESHOLD_MULTIPLIER) {
-          isScarce = true;
-          ingredientCost *= SCARCITY_PREMIUM;
-        }
-        totalCost += ingredientCost;
-      }
-    });
-    return {
-      totalCost,
-      status: isUnavailable ? 'UNAVAILABLE' : (isScarce ? 'LOW_STOCK' : 'AVAILABLE') as any,
-      scarcityPricing: isScarce,
-      hasZeroStockIngredient
-    };
-  };
+
 
   const currentMetrics = useMemo(() => {
     if (activeTab !== 'PRODUCTS') return { totalCost: 0, status: 'AVAILABLE', scarcityPricing: false, hasZeroStockIngredient: false };
-    return getProductProductionMetrics(newItem);
+    return getProductProductionMetrics(newItem, materials);
   }, [newItem.ingredients, materials, activeTab]);
 
   const handleOpenEdit = (item: Product | RawMaterial) => {
@@ -266,7 +241,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
     e.preventDefault();
     const now = Date.now();
     if (activeTab === 'PRODUCTS') {
-      const metrics = getProductProductionMetrics(newItem);
+      const metrics = getProductProductionMetrics(newItem, materials);
       const item: Product = {
         ...(newItem as Product),
         id: editingId || `INV-${now}`,
@@ -323,7 +298,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
     let csvContent = "";
     if (activeTab === 'PRODUCTS') {
       csvContent = "ID,Name,Category,Price,Cost,Stock\n" +
-        storeProducts.map(p => `${p.id},"${p.name}",${p.category},${p.price},${getProductProductionMetrics(p).totalCost},${p.stock || 0}`).join("\n");
+        storeProducts.map(p => `${p.id},"${p.name}",${p.category},${p.price},${getProductProductionMetrics(p, materials).totalCost},${p.stock || 0}`).join("\n");
     } else {
       csvContent = "ID,Name,Category,Stock,Unit,CostPerUnit\n" +
         materials.map(m => `${m.id},"${m.name}",${m.category || ''},${m.quantity},${m.unit},${m.costPerUnit}`).join("\n");
@@ -563,7 +538,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
                 </div>
                 <div className="grid grid-cols-1 gap-6">
                   {items.map(item => {
-                    const metrics = getProductProductionMetrics(item);
+                    const metrics = getProductProductionMetrics(item, materials);
                     return (
                       <div key={item.id} onClick={() => handleOpenEdit(item)} className={`bg-white p-6 rounded-[2.5rem] border shadow-sm flex flex-col md:flex-row gap-8 hover:shadow-xl transition-all cursor-pointer relative overflow-hidden ${metrics.status === 'UNAVAILABLE' ? 'border-red-200' : 'border-slate-200'}`}>
                         {metrics.status === 'UNAVAILABLE' && (

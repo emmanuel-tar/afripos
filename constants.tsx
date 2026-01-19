@@ -127,3 +127,6 @@ export const MOCK_TABLES: Table[] = [
   { id: 't7', number: '7', status: 'available', capacity: 8 },
   { id: 't8', number: 'VIP 1', status: 'available', capacity: 10 },
 ];
+
+export const LOW_STOCK_THRESHOLD_MULTIPLIER = 5;
+export const SCARCITY_PREMIUM = 1.25;

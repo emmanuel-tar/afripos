@@ -72,6 +72,8 @@ const MenuView: React.FC<MenuViewProps> = ({
     discountPercent
   } = useCartStore();
 
+  const { products, materials } = useInventoryStore();
+
   const activeCustomer = customerId ? customers.find(c => c.id === customerId) : null;
 
   const isFastOrder = tableNumber === 'FAST';
@@ -423,6 +425,8 @@ const MenuView: React.FC<MenuViewProps> = ({
           selectedCategory={selectedCategory}
           currency={branchSettings.currency}
           onProductClick={handleProductClick}
+          products={products}
+          materials={materials}
         />
       </div>
 

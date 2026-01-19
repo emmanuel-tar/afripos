@@ -215,6 +215,26 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
                     });
                 }
             }
+
+            // INTEGRATION: Record Expense in Finance
+            try {
+                // Dynamically import to avoid circular dependency if any, though stores usually fine.
+                // Using generic pattern if available or direct import.
+                // Note: We need to import useFinanceStore at top of file.
+                const { useFinanceStore } = await import('./useFinanceStore');
+                await useFinanceStore.getState().addExpense({
+                    id: `EXP-${Date.now()}`,
+                    category: 'REPLENISHMENT',
+                    amount: po.totalAmount,
+                    description: `PO Paid: ${po.poNumber} (${po.supplierName})`,
+                    timestamp: Date.now(),
+                    userId,
+                    userName
+                });
+                console.log('Expense automatically recorded for PO:', po.poNumber);
+            } catch (err) {
+                console.error('Failed to record automatic expense for PO:', err);
+            }
         }
     }
 }));
