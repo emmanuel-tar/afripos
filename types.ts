@@ -221,6 +221,10 @@ export interface Table {
   number: string;
   status: TableStatus;
   capacity: number;
+  x?: number; // For drag & drop positioning in future
+  y?: number;
+  joinedWith?: string[]; // IDs of tables joined with this one
+  assignedStaffId?: string;
 }
 
 export interface Expense {

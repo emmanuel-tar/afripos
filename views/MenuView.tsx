@@ -6,6 +6,8 @@ import { printKitchenOrder, printInvoice, printOrderSummary } from '../services/
 import { useCartStore } from '../stores/useCartStore';
 import { useAppStore } from '../stores/useAppStore';
 import { useInventoryStore } from '../stores/useInventoryStore';
+import { useFinanceStore } from '../stores/useFinanceStore';
+import { useCRMStore } from '../stores/useCRMStore';
 import { toast } from 'sonner';
 
 // Components
@@ -18,6 +20,7 @@ import { TipModal } from '../components/pos/modals/TipModal';
 import { CashTenderedModal } from '../components/pos/modals/CashTenderedModal';
 import { SplitPaymentModal } from '../components/pos/modals/SplitPaymentModal';
 import { PrintOptionsModal } from '../components/pos/modals/PrintOptionsModal';
+import { CustomerSelectModal } from '../components/pos/modals/CustomerSelectModal';
 
 interface MenuViewProps {
   tableNumber: string;
@@ -51,6 +54,9 @@ const MenuView: React.FC<MenuViewProps> = ({
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isPrintOptionsOpen, setIsPrintOptionsOpen] = useState(false);
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
+  const [isCustomerSelectOpen, setIsCustomerSelectOpen] = useState(false);
+
+  const { customers } = useCRMStore();
 
   const {
     cart,
@@ -60,9 +66,13 @@ const MenuView: React.FC<MenuViewProps> = ({
     clearCart,
     setCustomerCount,
     setDiscountPercent,
+    setCustomerId,
+    customerId,
     customerCount,
     discountPercent
   } = useCartStore();
+
+  const activeCustomer = customerId ? customers.find(c => c.id === customerId) : null;
 
   const isFastOrder = tableNumber === 'FAST';
 
@@ -204,7 +214,8 @@ const MenuView: React.FC<MenuViewProps> = ({
       vatAmount: vat,
       serviceChargeAmount: serviceCharge,
       printedAt: Date.now(),
-      reprintCount: 0
+      reprintCount: 0,
+      customerId: customerId || undefined
     };
 
     await saveOrder(newOrder);
@@ -231,6 +242,17 @@ const MenuView: React.FC<MenuViewProps> = ({
         user.name
       );
     }
+
+    // 3. CRM Integration: Award Points
+    if (newOrder.customerId) {
+      // Rate: 100 Naira = 1 Point (Example configuration)
+      const points = Math.floor(newOrder.total / 100);
+      if (points > 0) {
+        await useCRMStore.getState().awardPoints(newOrder.customerId, points);
+        toast.success(`Awarded ${points} points to customer!`);
+      }
+    }
+
 
     setLastOrder(newOrder);
     clearCart();
@@ -378,6 +400,19 @@ const MenuView: React.FC<MenuViewProps> = ({
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Guests:</span>
               <input type="number" min="1" value={customerCount} onChange={(e) => setCustomerCount(Number(e.target.value))} className="w-12 font-black text-indigo-600 text-center outline-none bg-transparent" />
             </div>
+
+            <button
+              onClick={() => setIsCustomerSelectOpen(true)}
+              className={`px-4 py-2 rounded-xl border flex items-center gap-2 transition-all ${activeCustomer ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-500 hover:border-indigo-300'}`}
+            >
+              <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-sm">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-tighter">
+                {activeCustomer ? activeCustomer.name : 'Select Guest'}
+              </span>
+            </button>
+
             <div className="bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-xl font-black text-sm flex items-center gap-3 uppercase tracking-widest">
               {isFastOrder ? '⚡ Quick Sell' : `🪑 Table ${tableNumber}`}
             </div>
@@ -471,6 +506,16 @@ const MenuView: React.FC<MenuViewProps> = ({
           onPrintSummary={handlePrintSummary}
         />
       )}
+
+      <CustomerSelectModal
+        isOpen={isCustomerSelectOpen}
+        onClose={() => setIsCustomerSelectOpen(false)}
+        onSelect={(customer) => {
+          setCustomerId(customer.id);
+          setIsCustomerSelectOpen(false);
+          toast.success(`Guest set to ${customer.name}`);
+        }}
+      />
 
       {lastOrder && (
         <div className="fixed inset-0 z-[200] bg-slate-900/90 backdrop-blur-xl flex items-center justify-center p-4">

@@ -12,7 +12,7 @@ interface CustomerViewProps {
 }
 
 const CustomerView: React.FC<CustomerViewProps> = ({ onBack }) => {
-    const { customers, fetchCustomers, addCustomer, updateCustomer, removeCustomer, awardPoints, updateBalance } = useCRMStore();
+    const { customers, fetchCustomers, addCustomer, updateCustomer, removeCustomer, awardPoints, redeemPoints, updateBalance } = useCRMStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Partial<Customer> | null>(null);
@@ -62,6 +62,17 @@ const CustomerView: React.FC<CustomerViewProps> = ({ onBack }) => {
                         <h2 className="text-5xl font-black text-slate-800 tracking-tight">CRM & Guests</h2>
                     </div>
                     <div className="flex gap-4">
+                        <button onClick={() => {
+                            const data = JSON.stringify(customers, null, 2);
+                            const blob = new Blob([data], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `customers-${format(new Date(), 'yyyy-MM-dd')}.json`;
+                            a.click();
+                        }} className="bg-white border border-slate-200 text-slate-600 px-6 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:border-indigo-600 transition-all">
+                            Export
+                        </button>
                         <button onClick={() => { setEditingCustomer({}); setIsCustomerModalOpen(true); }} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black shadow-lg shadow-indigo-100 uppercase tracking-widest text-xs hover:bg-indigo-700 transition-all flex items-center gap-2">
                             <span>+</span> Register Guest
                         </button>
@@ -143,7 +154,16 @@ const CustomerView: React.FC<CustomerViewProps> = ({ onBack }) => {
                                         updateBalance(customer.id, amount);
                                         toast.success(`Added ${CURRENCY}${amount} to ${customer.name}'s wallet`);
                                     }
-                                }} className="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all">Top Up Wallet</button>
+                                }} className="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all">Top Up</button>
+                                <button onClick={() => {
+                                    const points = Number(prompt(`Redeem points (Available: ${customer.loyaltyPoints})\nRate: 1 Point = ${CURRENCY}1`));
+                                    if (points && points <= customer.loyaltyPoints) {
+                                        redeemPoints(customer.id, points);
+                                        toast.success(`Redeemed ${points} points for ${CURRENCY}${points} credit`);
+                                    } else if (points > customer.loyaltyPoints) {
+                                        toast.error("Insufficient points");
+                                    }
+                                }} className="flex-1 bg-violet-600 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-violet-700 shadow-lg shadow-violet-100 transition-all">Redeem</button>
                             </div>
                         </div>
                     ))}

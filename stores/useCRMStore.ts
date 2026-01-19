@@ -11,6 +11,7 @@ interface CRMState {
     updateCustomer: (customer: Customer) => void;
     removeCustomer: (id: string) => void;
     awardPoints: (customerId: string, points: number) => void;
+    redeemPoints: (customerId: string, points: number, conversionRate?: number) => void;
     updateBalance: (customerId: string, amount: number) => void;
 }
 
@@ -53,6 +54,32 @@ export const useCRMStore = create<CRMState>((set, get) => ({
         const index = customers.findIndex(c => c.id === customerId);
         if (index >= 0) {
             const updated = { ...customers[index], loyaltyPoints: (customers[index].loyaltyPoints || 0) + points };
+            await crmDb.saveCustomer(updated);
+            set(state => ({
+                customers: state.customers.map(c => c.id === customerId ? updated : c)
+            }));
+        }
+    },
+
+    redeemPoints: async (customerId, points, conversionRate = 1) => {
+        const customers = get().customers;
+        const index = customers.findIndex(c => c.id === customerId);
+        if (index >= 0) {
+            const customer = customers[index];
+            const currentPoints = customer.loyaltyPoints || 0;
+
+            if (currentPoints < points) {
+                console.error("Insufficient points");
+                return;
+            }
+
+            const creditValue = points * conversionRate;
+            const updated = {
+                ...customer,
+                loyaltyPoints: currentPoints - points,
+                creditBalance: (customer.creditBalance || 0) + creditValue
+            };
+
             await crmDb.saveCustomer(updated);
             set(state => ({
                 customers: state.customers.map(c => c.id === customerId ? updated : c)

@@ -7,7 +7,9 @@ interface CartState {
     activeOrderId: string | null;
     tableNumber: string | null;
     customerCount: number;
+    customerCount: number;
     discountPercent: number;
+    customerId: string | null;
 
     // Actions
     addToCart: (product: Product, modifiers?: Modifier[]) => void;
@@ -17,6 +19,7 @@ interface CartState {
     setActiveOrderId: (id: string | null) => void;
     setCustomerCount: (count: number) => void;
     setDiscountPercent: (percent: number) => void;
+    setCustomerId: (id: string | null) => void;
     clearCart: () => void;
     voidItem: (cartId: string) => void;
 }
@@ -29,6 +32,7 @@ export const useCartStore = create<CartState>()(
             tableNumber: null,
             customerCount: 1,
             discountPercent: 0,
+            customerId: null,
 
             addToCart: (product, modifiers = []) => {
                 const { cart } = get();
@@ -94,7 +98,8 @@ export const useCartStore = create<CartState>()(
             setActiveOrderId: (activeOrderId) => set({ activeOrderId }),
             setCustomerCount: (customerCount) => set({ customerCount }),
             setDiscountPercent: (discountPercent) => set({ discountPercent }),
-            clearCart: () => set({ cart: [], activeOrderId: null, customerCount: 1, discountPercent: 0 })
+            setCustomerId: (customerId) => set({ customerId }),
+            clearCart: () => set({ cart: [], activeOrderId: null, customerCount: 1, discountPercent: 0, tableNumber: null, customerId: null })
         }),
         {
             name: 'afripos-cart-storage',
