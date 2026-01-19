@@ -6,6 +6,7 @@ import InventoryView from './views/InventoryView';
 import FinanceView from './views/FinanceView';
 import StaffView from './views/StaffView';
 import CustomerView from './views/CustomerView';
+import { PurchasingView } from './views/PurchasingView';
 import FloorMapView from './views/FloorMapView';
 import StationDisplayView from './views/StationDisplayView';
 import SettingsView from './views/SettingsView';
@@ -203,6 +204,7 @@ const App: React.FC = () => {
         {view === AppView.FINANCE && <FinanceView onBack={() => setView(AppView.DASHBOARD)} />}
         {view === AppView.HR && <StaffView onBack={() => setView(AppView.DASHBOARD)} />}
         {view === AppView.CRM && <CustomerView onBack={() => setView(AppView.DASHBOARD)} />}
+        {view === AppView.PURCHASING && <PurchasingView onBack={() => setView(AppView.DASHBOARD)} />}
       </div>
       <Toaster position="top-right" richColors />
     </div>

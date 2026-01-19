@@ -11,7 +11,8 @@ export enum AppView {
   STATION_DISPLAY = 'STATION_DISPLAY',
   FINANCE = 'FINANCE',
   HR = 'HR',
-  CRM = 'CRM'
+  CRM = 'CRM',
+  PURCHASING = 'PURCHASING'
 }
 
 export type PrintLocation = 'KITCHEN' | 'BAR' | 'GRILL' | 'STORE';
@@ -247,4 +248,52 @@ export interface Customer {
   creditBalance: number;
   totalSpent: number;
   lastVisit?: number;
+}
+
+export type InvoiceStatus = 'DRAFT' | 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+
+export interface SupplierInvoice {
+  id: string;
+  invoiceNumber: string;
+  poId?: string; // Linked PO
+  supplierId: string;
+  supplierName: string;
+  dateIssued: number;
+  dueDate: number;
+  totalAmount: number;
+  amountPaid: number;
+  status: InvoiceStatus;
+  items: PurchaseOrderItem[]; // Can differ from PO if partial delivery
+  notes?: string;
+}
+
+export interface SupplierPayment {
+  id: string;
+  invoiceId?: string; // Optional, can be account payment
+  supplierId: string;
+  amount: number;
+  date: number;
+  method: 'CASH' | 'TRANSFER' | 'CHEQUE';
+  reference?: string;
+  recordedBy: string;
+}
+
+export interface CreditNote {
+  id: string;
+  invoiceId: string;
+  supplierId: string;
+  amount: number;
+  reason: string;
+  date: number;
+  status: 'DRAFT' | 'USED' | 'REFUNDED';
+}
+
+export interface RFQ {
+  id: string;
+  rfqNumber: string;
+  supplierIds: string[]; // Sent to multiple suppliers
+  items: { materialName: string; quantity: number; unit: string; }[];
+  status: 'DRAFT' | 'SENT' | 'CLOSED';
+  deadline: number;
+  dateCreated: number;
 }

@@ -10,7 +10,7 @@ import { getProductProductionMetrics } from '../utils/inventoryUtils';
 
 import { toast } from 'sonner';
 import ItemHistory from '../components/inventory/ItemHistory';
-import { PurchaseOrderManager } from '../components/inventory/PurchaseOrderManager';
+
 import { GoogleGenAI } from "@google/genai";
 
 interface InventoryViewProps {
@@ -42,7 +42,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
   const { user } = useAppStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'PRODUCTS' | 'MATERIALS' | 'SUPPLIERS' | 'HISTORY' | 'PO'>('PRODUCTS');
+  const [activeTab, setActiveTab] = useState<'PRODUCTS' | 'MATERIALS' | 'HISTORY'>('PRODUCTS');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -454,14 +454,8 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
             <button onClick={() => setActiveTab('MATERIALS')} className={`px-6 py-2 rounded-xl font-bold text-xs transition-all ${activeTab === 'MATERIALS' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>
               INGREDIENTS
             </button>
-            <button onClick={() => setActiveTab('SUPPLIERS')} className={`px-6 py-2 rounded-xl font-bold text-xs transition-all ${activeTab === 'SUPPLIERS' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>
-              SUPPLIERS
-            </button>
             <button onClick={() => setActiveTab('HISTORY')} className={`px-6 py-2 rounded-xl font-bold text-xs transition-all ${activeTab === 'HISTORY' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>
               GLOBAL LOGS
-            </button>
-            <button onClick={() => setActiveTab('PO')} className={`px-6 py-2 rounded-xl font-bold text-xs transition-all ${activeTab === 'PO' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>
-              PURCHASE ORDERS
             </button>
           </div>
           <div className="flex gap-2">
@@ -478,11 +472,11 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
               Export
             </button>
           </div>
-          {activeTab !== 'PO' && (
+          {activeTab !== 'HISTORY' && (
             <button onClick={() => {
               setEditingId(null); setNewItem({ ingredients: [], image: '' }); setIsModalOpen(true);
             }} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black shadow-lg shadow-indigo-100 uppercase tracking-widest text-[10px] hover:bg-indigo-700 transition-all">
-              + New {activeTab === 'PRODUCTS' ? 'Dish' : activeTab === 'MATERIALS' ? 'Material' : activeTab === 'SUPPLIERS' ? 'Supplier' : ''}
+              + New {activeTab === 'PRODUCTS' ? 'Dish' : 'Material'}
             </button>
           )}
         </div>
@@ -631,40 +625,6 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
               </div>
             ))}
           </div>
-        ) : activeTab === 'SUPPLIERS' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSuppliers.map(sup => (
-              <div key={sup.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:shadow-xl transition-all">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-2xl text-slate-400">
-                    {sup.name.charAt(0)}
-                  </div>
-                  <div className="flex flex-col gap-1 items-end">
-                    <button onClick={() => handleOpenEdit(sup as any)} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Edit Details</button>
-                    <button onClick={() => handleDeleteItem(sup, 'SUPPLIER')} className="text-[9px] font-black text-red-500 uppercase tracking-widest">Remove</button>
-                  </div>
-                </div>
-                <h3 className="text-xl font-black text-slate-800 mb-2">{sup.name}</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 text-sm text-slate-500 font-bold">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                    {sup.email || 'No email'}
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-500 font-bold">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                    {sup.phone || 'No phone'}
-                  </div>
-                </div>
-                <div className="mt-6 flex flex-wrap gap-2">
-                  {sup.categories.map(cat => (
-                    <span key={cat} className="text-[9px] font-black bg-slate-50 text-slate-400 px-3 py-1 rounded-full uppercase tracking-widest">{cat}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : activeTab === 'PO' ? (
-          <PurchaseOrderManager />
         ) : (
           <div className="max-w-4xl mx-auto">
             <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest mb-8">System-wide Activity Log</h2>
