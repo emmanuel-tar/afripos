@@ -59,6 +59,7 @@ export interface Shift {
 export interface RawMaterial {
   id: string;
   name: string;
+  barcode?: string; // New field for scanning
   quantity: number;
   unit: string;
   costPerUnit: number;
@@ -102,11 +103,14 @@ export interface Supplier {
 export type PurchaseOrderStatus = 'DRAFT' | 'PENDING' | 'RECEIVED' | 'CANCELLED';
 
 export interface PurchaseOrderItem {
-  materialId: string;
-  materialName: string;
+  itemId: string; // materialId or productId
+  type: 'RAW_MATERIAL' | 'PRODUCT';
+  name: string; // materialName
   quantity: number;
   unit: string;
   unitPrice: number;
+  discount?: number; // Amount or Percentage, let's assume value for now or we add discountPercent
+  taxRate?: number; // Percentage
   total: number;
 }
 
@@ -118,6 +122,7 @@ export interface PurchaseOrder {
   items: PurchaseOrderItem[];
   subtotal: number;
   taxAmount?: number;
+  discountAmount?: number; // New field
   totalAmount: number;
   status: PurchaseOrderStatus;
   dateCreated: number;
@@ -137,6 +142,7 @@ export interface Modifier {
 export interface Product {
   id: string;
   name: string;
+  barcode?: string; // New field for scanning
   price: number;
   costPrice?: number;
   category: string;
@@ -286,6 +292,24 @@ export interface CreditNote {
   reason: string;
   date: number;
   status: 'DRAFT' | 'USED' | 'REFUNDED';
+}
+
+
+export interface Warehouse {
+  id: string;
+  name: string;
+  address?: string;
+  managerId?: string;
+  isMain?: boolean;
+}
+
+export interface TerminalConfig {
+  id: string;
+  name: string;
+  warehouseId?: string; // Default warehouse for this terminal
+  availablePrinters?: PrinterConfig[];
+  defaultPrinterId?: string;
+  printRoles?: PrintLocation[]; // Roles this terminal can print for
 }
 
 export interface RFQ {

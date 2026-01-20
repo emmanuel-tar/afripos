@@ -2,7 +2,8 @@ import Dexie, { type Table } from 'dexie';
 import {
     Order, Product, RawMaterial, Supplier,
     StockTransaction, PurchaseOrder, Expense,
-    Customer, User, Shift
+    Customer, User, Shift, SupplierInvoice,
+    SupplierPayment, RFQ, CreditNote, Warehouse
 } from '../types';
 
 export class AfriPOSDatabase extends Dexie {
@@ -16,6 +17,11 @@ export class AfriPOSDatabase extends Dexie {
     customers!: Table<Customer>;
     staff!: Table<User>;
     shifts!: Table<Shift>;
+    invoices!: Table<SupplierInvoice>;
+    payments!: Table<SupplierPayment>;
+    rfqs!: Table<RFQ>;
+    creditNotes!: Table<CreditNote>;
+    warehouses!: Table<Warehouse>;
 
     constructor() {
         super('AfriPOSDatabase');
@@ -29,7 +35,12 @@ export class AfriPOSDatabase extends Dexie {
             expenses: 'id, category, timestamp',
             customers: 'id, name, phone, email',
             staff: 'id, name, role',
-            shifts: 'id, userId, status, startTime'
+            shifts: 'id, userId, status, startTime',
+            invoices: 'id, invoiceNumber, supplierId, status',
+            payments: 'id, supplierId, date',
+            rfqs: 'id, rfqNumber, status',
+            creditNotes: 'id, supplierId, status',
+            warehouses: 'id, name'
         });
     }
 }
