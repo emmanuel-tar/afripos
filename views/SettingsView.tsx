@@ -14,6 +14,7 @@ interface SettingsViewProps {
 const SettingsView: React.FC<SettingsViewProps> = ({ onBack, currentUser }) => {
   // Inventory Store
   const { warehouses, addWarehouse, deleteWarehouse, fetchInventory } = useInventoryStore();
+  const { terminalConfig, setTerminalConfig } = useAppStore();
 
   useEffect(() => {
     fetchInventory();
@@ -41,7 +42,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onBack, currentUser }) => {
 
   const [showAddBranch, setShowAddBranch] = useState(false);
   const [showAddStaff, setShowAddStaff] = useState(false);
-  const [showAddWarehouse, setShowAddWarehouse] = useState(false); // NEW
+  const [showAddWarehouse, setShowAddWarehouse] = useState(false);
+  const [showTerminalConfig, setShowTerminalConfig] = useState(false); // NEW
 
   // Location Filter for Staff
   const [staffLocationFilter, setStaffLocationFilter] = useState<string>('ALL');
@@ -63,10 +65,17 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onBack, currentUser }) => {
     pin: ''
   });
 
-  const [newWarehouse, setNewWarehouse] = useState<Partial<Warehouse>>({ // NEW
+  const [newWarehouse, setNewWarehouse] = useState<Partial<Warehouse>>({
     name: '',
     address: '',
     managerId: ''
+  });
+
+  const [editingTerminal, setEditingTerminal] = useState<Partial<TerminalConfig>>({ // NEW
+    id: `term-${Math.floor(Math.random() * 1000)}`,
+    name: 'POS Terminal 1',
+    warehouseId: '',
+    defaultPrinterId: ''
   });
 
   const handleAddWarehouse = async () => {
@@ -87,6 +96,22 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onBack, currentUser }) => {
       await deleteWarehouse(id);
     }
   };
+
+  const handleSaveTerminal = () => { // NEW
+    if (!editingTerminal.name || !editingTerminal.id) return;
+    setTerminalConfig(editingTerminal as TerminalConfig);
+    setShowTerminalConfig(false);
+  };
+
+  // Initialize editing terminal from store when modal opens or store changes
+  useEffect(() => {
+    if (terminalConfig) {
+      setEditingTerminal(terminalConfig);
+    } else if (warehouses.length > 0 && !editingTerminal.warehouseId) {
+      // Default to first warehouse if not set
+      setEditingTerminal(prev => ({ ...prev, warehouseId: warehouses[0].id }));
+    }
+  }, [terminalConfig, warehouses, showTerminalConfig]);
 
   useEffect(() => {
     localStorage.setItem('afripos_branches', JSON.stringify(branches));
@@ -336,6 +361,46 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onBack, currentUser }) => {
           </div>
         </section>
 
+        {/* Terminal Configuration */}
+        <section>
+          <div className="flex justify-between items-end mb-8">
+            <div>
+              <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest border-l-4 border-indigo-600 pl-4">Terminal Configuration</h2>
+              <p className="text-[10px] font-black text-slate-400 uppercase mt-1 ml-4">Device settings for this POS terminal</p>
+            </div>
+            <button
+              onClick={() => setShowTerminalConfig(true)}
+              className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 shadow-lg transition-all"
+            >
+              Configure Device
+            </button>
+          </div>
+
+          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-[10rem] -mr-10 -mt-10 opacity-50"></div>
+            <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <div>
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Device ID</div>
+                <div className="text-3xl font-black text-indigo-600 tracking-tight">{terminalConfig?.id || 'NOT CONFIGURED'}</div>
+                <div className="text-lg font-bold text-slate-800 mt-1">{terminalConfig?.name || 'Please configure this terminal'}</div>
+              </div>
+
+              <div className="flex gap-8">
+                <div>
+                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Linked Warehouse</div>
+                  <div className="text-sm font-bold text-slate-700">
+                    {warehouses.find(w => w.id === terminalConfig?.warehouseId)?.name || 'None'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Default Printer</div>
+                  <div className="text-sm font-bold text-slate-700">{terminalConfig?.defaultPrinterId || 'System Default'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Staff Section */}
         <section>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
@@ -531,6 +596,77 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onBack, currentUser }) => {
                 className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black shadow-2xl shadow-indigo-100 uppercase tracking-widest text-lg"
               >
                 Create Warehouse
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Terminal Config Modal */}
+      {showTerminalConfig && (
+        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden">
+            <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="text-3xl font-black text-slate-800">Terminal Setup</h3>
+              <button onClick={() => setShowTerminalConfig(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-10 space-y-6">
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Terminal ID (Device Unique)</label>
+                <input
+                  type="text"
+                  value={editingTerminal.id}
+                  onChange={e => setEditingTerminal({ ...editingTerminal, id: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 font-bold outline-none font-mono"
+                  placeholder="TERM-001"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Terminal Name</label>
+                <input
+                  type="text"
+                  value={editingTerminal.name}
+                  onChange={e => setEditingTerminal({ ...editingTerminal, name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 font-bold outline-none focus:ring-2 focus:ring-indigo-600"
+                  placeholder="e.g. Bar POS 1"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Default Warehouse</label>
+                  <select
+                    value={editingTerminal.warehouseId}
+                    onChange={e => setEditingTerminal({ ...editingTerminal, warehouseId: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 font-bold outline-none"
+                  >
+                    <option value="">Select Warehouse</option>
+                    {warehouses.map(w => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Default Printer</label>
+                  {/* Mock Printer Selection for now */}
+                  <select
+                    value={editingTerminal.defaultPrinterId}
+                    onChange={e => setEditingTerminal({ ...editingTerminal, defaultPrinterId: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 font-bold outline-none"
+                  >
+                    <option value="">None / System Default</option>
+                    <option value="printer-1">Kitchen Printer (192.168.1.100)</option>
+                    <option value="printer-2">Bar Printer (192.168.1.101)</option>
+                    <option value="printer-3">Receipt Printer (USB)</option>
+                  </select>
+                </div>
+              </div>
+              <button
+                onClick={handleSaveTerminal}
+                className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black shadow-2xl shadow-indigo-100 uppercase tracking-widest text-lg"
+              >
+                Save Configuration
               </button>
             </div>
           </div>
