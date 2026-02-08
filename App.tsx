@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { AppView, Order } from './types';
 import { LoginView } from './views/LoginView';
 import MenuView from './views/MenuView';
@@ -310,6 +311,7 @@ const App: React.FC = () => {
       </div>
       <Toaster position="top-right" richColors />
       <NotificationListener />
+      <Analytics />
     </div >
   );
 };
