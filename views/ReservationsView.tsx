@@ -57,9 +57,11 @@ const ReservationsView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             totalDepositRequired: amount,
             depositPaid: 0,
             notes: formData.notes,
-            branchId: currentBranch.id,
+            locationId: currentBranch.id,
             createdAt: Date.now(),
-            sendConfirmation: formData.sendConfirmation
+            sendConfirmation: formData.sendConfirmation,
+            source: 'INTERNAL',
+            reference: Math.random().toString(36).substring(2, 8).toUpperCase()
         };
 
         if (amount > 0) {
@@ -167,6 +169,12 @@ const ReservationsView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                                 }`}>
                                                 {res.status}
                                             </span>
+                                            {res.source === 'ONLINE' && (
+                                                <span className="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 text-[7px] font-black uppercase tracking-widest border border-indigo-100 flex items-center gap-1">
+                                                    <svg className="w-2 h-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                    Online
+                                                </span>
+                                            )}
                                             {res.totalDepositRequired > 0 && (
                                                 <span className={`px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-tighter ${res.paymentStatus === 'FULLY_PAID' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                                                     {res.paymentStatus === 'FULLY_PAID' ? 'Deposit Paid' : `₦${res.totalDepositRequired} Pending`}

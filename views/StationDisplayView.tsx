@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { getOrders } from '../services/db';
 import { Order } from '../types';
 import { PRINT_LOCATIONS } from '../constants';
+import { saveOrder } from '../services/db';
+import { toast } from 'sonner';
 
 interface StationDisplayViewProps {
   onBack: () => void;
@@ -14,10 +15,8 @@ const StationDisplayView: React.FC<StationDisplayViewProps> = ({ onBack }) => {
   const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
-    // Refresh orders periodically or on change
     const refreshOrders = async () => {
-      const all = await getOrders();
-      // Filter for orders that have items for this station and are not finished
+      const all = await (await import('../services/db')).getOrders();
       const filtered = all.filter(o => {
         const hasItemForStation = o.items.some(i => i.printLocation === station);
         if (!hasItemForStation) return false;
@@ -28,12 +27,23 @@ const StationDisplayView: React.FC<StationDisplayViewProps> = ({ onBack }) => {
           return o.status === 'scheduled';
         }
       });
-      setOrders(filtered);
+      setOrders(filtered.sort((a, b) => a.timestamp - b.timestamp));
     };
     refreshOrders();
-    const interval = setInterval(refreshOrders, 5000);
+    const interval = setInterval(refreshOrders, 3000);
     return () => clearInterval(interval);
   }, [station, activeTab]);
+
+  const handleStatusUpdate = async (order: Order, nextStatus: Order['status']) => {
+    const updated = { ...order, status: nextStatus };
+    await saveOrder(updated);
+    toast.success(`Order ${order.id.slice(-4)} set to ${nextStatus}`);
+  };
+
+  const getTimeElapsed = (timestamp: number) => {
+    const diff = Math.floor((Date.now() - timestamp) / 60000);
+    return diff;
+  };
 
   return (
     <div className="h-full bg-slate-900 flex flex-col text-white">
@@ -93,10 +103,13 @@ const StationDisplayView: React.FC<StationDisplayViewProps> = ({ onBack }) => {
                 </div>
                 <div className="text-right">
                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    {activeTab === 'ACTIVE' ? 'Ordered At' : 'Prep Time'}
+                    {activeTab === 'ACTIVE' ? 'Wait Time' : 'Prep Time'}
                   </div>
-                  <div className={`text-sm font-black ${activeTab === 'SCHEDULED' ? 'text-amber-600' : 'text-slate-800'}`}>
-                    {new Date(activeTab === 'ACTIVE' ? order.timestamp : (order.scheduledTime || 0)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <div className={`text-xl font-black ${activeTab === 'ACTIVE'
+                      ? getTimeElapsed(order.timestamp) > 15 ? 'text-red-600 animate-pulse' : 'text-slate-800'
+                      : 'text-amber-600'
+                    }`}>
+                    {activeTab === 'ACTIVE' ? `${getTimeElapsed(order.timestamp)}m` : new Date(order.scheduledTime || 0).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
               </div>
@@ -117,9 +130,16 @@ const StationDisplayView: React.FC<StationDisplayViewProps> = ({ onBack }) => {
               </div>
               <div className="p-6 bg-slate-50 mt-auto">
                 <button
-                  className={`w-full py-4 text-white rounded-2xl font-black shadow-lg transition-all active:scale-[0.98] uppercase tracking-widest ${activeTab === 'ACTIVE' ? 'bg-green-600 hover:bg-green-700 shadow-green-100' : 'bg-amber-500 hover:bg-amber-600 shadow-amber-100'}`}
+                  onClick={() => handleStatusUpdate(order, activeTab === 'ACTIVE' ? 'ready' : 'preparing')}
+                  className={`w-full py-4 text-white rounded-2xl font-black shadow-lg transition-all active:scale-[0.98] uppercase tracking-widest ${activeTab === 'ACTIVE'
+                      ? order.status === 'ready' ? 'bg-slate-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 shadow-green-100'
+                      : 'bg-amber-500 hover:bg-amber-600 shadow-amber-100'
+                    }`}
+                  disabled={order.status === 'ready'}
                 >
-                  {activeTab === 'ACTIVE' ? 'Mark Done' : 'Start Preparation'}
+                  {activeTab === 'ACTIVE'
+                    ? order.status === 'ready' ? 'Waiting Pickup' : 'Mark Ready'
+                    : 'Start Preparation'}
                 </button>
               </div>
             </div>

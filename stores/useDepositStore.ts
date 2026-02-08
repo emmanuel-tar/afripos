@@ -76,7 +76,7 @@ export const useDepositStore = create<DepositState>((set, get) => ({
             if (!rule.isActive) return false;
 
             // Branch check
-            if (rule.branchId && rule.branchId !== reservation.branchId) return false;
+            if (rule.locationId && rule.locationId !== reservation.locationId) return false;
 
             // Day of week check
             if (rule.daysOfWeek && !rule.daysOfWeek.includes(dayOfWeek)) return false;

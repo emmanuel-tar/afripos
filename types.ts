@@ -18,8 +18,14 @@ export enum AppView {
   NOTIFICATION_SETTINGS = 'NOTIFICATION_SETTINGS',
   SYSTEM_CONFIG = 'SYSTEM_CONFIG',
   CLOSE_BILL = 'CLOSE_BILL',
-  WALLET_MANAGEMENT = 'WALLET_MANAGEMENT'
+  WALLET_MANAGEMENT = 'WALLET_MANAGEMENT',
+  PUBLIC_BOOKING = 'PUBLIC_BOOKING',
+  BOOKING_SELF_SERVICE = 'BOOKING_SELF_SERVICE',
+  STAFF_LOGIN = 'STAFF_LOGIN',
+  PRINTER_ROUTING = 'PRINTER_ROUTING'
 }
+
+export type SyncStatus = 'SYNCED' | 'QUEUED' | 'SYNCING' | 'ERROR';
 
 export type NotificationChannel = 'SMS' | 'WHATSAPP';
 export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED';
@@ -71,7 +77,7 @@ export interface DepositRule {
   name: string;
   type: DepositType;
   value: number; // Amount or percentage
-  branchId?: string; // Optional: all branches if empty
+  locationId?: string; // Optional: all branches if empty
   roomId?: string; // Optional: specific room
   daysOfWeek?: number[]; // [0-6] 0=Sunday
   startTime?: string; // HH:mm
@@ -145,10 +151,12 @@ export interface Reservation {
   depositPaid: number;
   paymentDeadline?: number;
   notes?: string;
-  branchId: string;
+  locationId: string;
   createdAt: number;
   sendConfirmation: boolean;
   notificationStatus?: NotificationStatus;
+  source: 'ONLINE' | 'INTERNAL';
+  reference: string;
 }
 
 export type PrintLocation = 'KITCHEN' | 'BAR' | 'GRILL' | 'STORE';
@@ -158,6 +166,8 @@ export interface PrinterConfig {
   name: string;
   location: PrintLocation;
   enabled: boolean;
+  ipAddress?: string; // For network printers
+  connectionType: 'USB' | 'NETWORK' | 'BLUETOOTH';
   isDefault?: boolean;
 }
 
@@ -355,6 +365,7 @@ export interface Order {
   // Printing tracking
   printedAt?: number;
   reprintCount?: number;
+  syncStatus?: SyncStatus;
 }
 
 export type TableStatus = 'available' | 'occupied' | 'reserved' | 'dirty';
@@ -373,6 +384,7 @@ export interface Table {
   rotation?: number;
   joinedWith?: string[];
   assignedStaffId?: string;
+  locationId: string;
   isActive: boolean;
 }
 
@@ -382,6 +394,7 @@ export interface Room {
   name: string;
   type: 'VIP' | 'REGULAR' | 'OUTDOOR' | 'BAR' | 'LOUNGE';
   pricingMultiplier: number; // e.g. 1.1 for +10%
+  locationId: string;
   isActive: boolean;
   order: number;
 }

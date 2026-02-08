@@ -8,6 +8,7 @@ import { useAppStore } from '../stores/useAppStore';
 import { useInventoryStore } from '../stores/useInventoryStore';
 import { useFinanceStore } from '../stores/useFinanceStore';
 import { useCRMStore } from '../stores/useCRMStore';
+import { useSyncStore } from '../stores/useSyncStore';
 import { toast } from 'sonner';
 
 // Components
@@ -56,7 +57,7 @@ const MenuView: React.FC<MenuViewProps> = ({
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
   const [isCustomerSelectOpen, setIsCustomerSelectOpen] = useState(false);
 
-  const { customers } = useCRMStore();
+  const { customers, fetchCustomers } = useCRMStore();
 
   const {
     cart,
@@ -76,11 +77,16 @@ const MenuView: React.FC<MenuViewProps> = ({
 
   const activeCustomer = customerId ? customers.find(c => c.id === customerId) : null;
 
+
+  const isOnline = useAppStore(state => state.isOnline);
+  const { queueOrder, getQueueCount } = useSyncStore();
+
   const isFastOrder = tableNumber === 'FAST';
 
   // Cleanup on mount/unmount and load order
   useEffect(() => {
     const loadExistingOrder = async () => {
+      fetchCustomers(); // Load customers for guest selection
       if (!isFastOrder) {
         const existing = await getActiveTableOrder(tableNumber);
         if (existing) {
@@ -275,10 +281,9 @@ const MenuView: React.FC<MenuViewProps> = ({
   };
 
   const handleSendOrder = async (status: Order['status'] = 'preparing') => {
-    // similar logic to handleCheckout but status pending/preparing
     const newOrder: Order = {
       id: activeOrderId || `ORD-${Date.now()}`,
-      tableNumber,
+      tableNumber: isFastOrder ? undefined : tableNumber,
       items: [...cart],
       subtotal: getSubtotal(),
       discount: discountPercent,
@@ -292,23 +297,26 @@ const MenuView: React.FC<MenuViewProps> = ({
       printedAt: status === 'preparing' ? Date.now() : undefined,
       reprintCount: 0
     };
-    await saveOrder(newOrder);
-    setActiveOrderId(newOrder.id);
+
+    const isOnline = useSyncStore.getState().isOnline;
 
     if (status === 'preparing') {
-      toast.success("Order Sent to Kitchen!");
+      toast.info(isOnline ? "Sending order to kitchen..." : "Saving order offline...");
 
-      // Print kitchen order ticket
+      // Print kitchen order ticket (Simulated)
       try {
         const printed = await printKitchenOrder(newOrder, branchSettings);
         if (printed) {
-          toast.success('Kitchen order printed successfully');
+          toast.success('Kitchen ticket printed locally');
         }
       } catch (error) {
         console.error('Error printing kitchen order:', error);
-        toast.error('Failed to print kitchen order');
       }
     }
+
+    // Instead of raw saveOrder, use syncStore to handle offline queueing
+    await queueOrder(newOrder);
+    setActiveOrderId(newOrder.id);
   };
 
   // Handle print button click
@@ -394,7 +402,14 @@ const MenuView: React.FC<MenuViewProps> = ({
       <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
         <div className="mb-8 flex justify-between items-end">
           <div>
-            <div className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-1">{branchSettings.name}</div>
+            <div className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-1 flex items-center gap-2">
+              {branchSettings.name}
+              {!isOnline && (
+                <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[8px] animate-pulse">
+                  OFFLINE ({getQueueCount()})
+                </span>
+              )}
+            </div>
             <h2 className="text-4xl font-black text-slate-800">{selectedCategory}</h2>
           </div>
           <div className="flex items-center gap-3">

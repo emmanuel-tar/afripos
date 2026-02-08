@@ -58,7 +58,7 @@ export const PurchasingView: React.FC<PurchasingViewProps> = ({ onBack }) => {
 
         // 1. Create Payment
         const payment: SupplierPayment = {
-            id: `PMT - ${Date.now()} `,
+            id: `PMT-${Date.now()}`,
             invoiceId: paymentData.invoiceId,
             supplierId: paymentData.supplierId!,
             amount: paymentData.amount,
@@ -81,7 +81,7 @@ export const PurchasingView: React.FC<PurchasingViewProps> = ({ onBack }) => {
 
         // 3. Record Expense in Finance
         await addExpense({
-            id: `EXP - ${Date.now()} `,
+            id: `EXP-${Date.now()}`,
             category: 'REPLENISHMENT',
             amount: paymentData.amount,
             description: `Invoice Payment #${invoice.invoiceNumber} (${payment.method})`,
@@ -124,7 +124,7 @@ export const PurchasingView: React.FC<PurchasingViewProps> = ({ onBack }) => {
                         <button
                             key={item.id}
                             onClick={() => { setActiveTab(item.id as any); setSupplierView('LIST'); }}
-                            className={`w - full flex items - center gap - 4 px - 6 py - 4 rounded - 2xl transition - all ${activeTab === item.id ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5 hover:text-white'} `}
+                            className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all ${activeTab === item.id ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={item.icon} /></svg>
                             <span className="font-bold text-sm tracking-wide">{item.label}</span>

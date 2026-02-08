@@ -7,6 +7,7 @@ import { useWalletStore } from '../stores/useWalletStore';
 import WalletSummaryCard from '../components/crm/WalletSummaryCard';
 import WalletLedger from '../components/crm/WalletLedger';
 import CreditConfigModal from '../components/crm/CreditConfigModal';
+import TransferModal from '../components/crm/TransferModal';
 import { useAppStore } from '../stores/useAppStore';
 
 const CURRENCY = '₦';
@@ -22,6 +23,7 @@ const CustomerView: React.FC<CustomerViewProps> = ({ onBack }) => {
     const [editingCustomer, setEditingCustomer] = useState<Partial<Customer> | null>(null);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
     useEffect(() => {
         fetchCustomers();
@@ -286,31 +288,31 @@ const CustomerView: React.FC<CustomerViewProps> = ({ onBack }) => {
                                             Top Up Wallet
                                         </button>
                                         <button
+                                            onClick={() => setIsTransferModalOpen(true)}
+                                            className="w-full py-4 rounded-2xl bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
+                                        >
+                                            Transfer Between Wallets
+                                        </button>
+                                        <button
                                             onClick={async () => {
-                                                const amount = Number(prompt("Enter deduction amount:"));
+                                                const amount = Number(prompt("Enter amount to refund to wallet:"));
                                                 if (amount) {
                                                     const user = useAppStore.getState().user;
-                                                    const success = await useWalletStore.getState().deduct(
+                                                    await useWalletStore.getState().topUp(
                                                         selectedCustomer.id,
-                                                        'CASH',
+                                                        'REFUND',
                                                         amount,
                                                         user?.id || 'SYS',
                                                         user?.name || 'System',
-                                                        undefined,
-                                                        'ADJUSTMENT',
-                                                        "Manual Adjustment"
+                                                        "Manual Wallet Refund"
                                                     );
-                                                    if (success) {
-                                                        fetchCustomers();
-                                                        toast.success("Funds deducted successfully");
-                                                    } else {
-                                                        toast.error("Insufficient funds");
-                                                    }
+                                                    fetchCustomers();
+                                                    toast.success("Funds added to refund wallet");
                                                 }
                                             }}
-                                            className="w-full py-4 rounded-2xl bg-white border border-slate-200 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all"
+                                            className="w-full py-4 rounded-2xl bg-white border border-slate-200 text-indigo-600 font-black text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all"
                                         >
-                                            Manual Deduction
+                                            Issue Refund Credit
                                         </button>
                                     </div>
                                 </div>
@@ -333,6 +335,17 @@ const CustomerView: React.FC<CustomerViewProps> = ({ onBack }) => {
                         updateCustomer({ ...selectedCustomer, creditConfig: config });
                         setIsCreditModalOpen(false);
                         toast.success("Credit configuration updated");
+                    }}
+                />
+            )}
+
+            {/* Transfer Modal */}
+            {isTransferModalOpen && selectedCustomer && (
+                <TransferModal
+                    customer={selectedCustomer}
+                    onClose={() => setIsTransferModalOpen(false)}
+                    onSuccess={() => {
+                        fetchCustomers();
                     }}
                 />
             )}

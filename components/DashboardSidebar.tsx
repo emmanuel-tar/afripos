@@ -14,7 +14,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     canAccessInventory,
     canAccessSettings
 }) => {
-    const { setView, currentBranch, logout } = useAppStore();
+    const { view, setView, currentBranch, logout } = useAppStore();
     const { setTableNumber } = useCartStore();
     const [isSalesOpen, setIsSalesOpen] = React.useState(true);
 
@@ -73,6 +73,13 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                             <span className="text-sm">Kitchen Display</span>
                         </button>
                     )}
+
+                    <button onClick={() => setView(AppView.STAFF_LOGIN)} className="flex items-center gap-4 p-4 rounded-[1.2rem] text-amber-400 hover:bg-white/5 hover:text-amber-300 transition-all font-black active:scale-95 group border border-amber-500/10">
+                        <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center group-hover:rotate-12 transition-transform">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
+                        </div>
+                        <span className="text-sm">Staff Terminal</span>
+                    </button>
                 </div>
             </div>
 
@@ -112,6 +119,21 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                             </div>
                             <span className="text-sm">Finance</span>
                         </button>
+                        <button
+                            onClick={() => setView(AppView.PUBLIC_BOOKING)}
+                            className={`w-full flex items-center gap-4 px-8 py-4 rounded-[2rem] transition-all group ${view === AppView.PUBLIC_BOOKING ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50 hover:text-indigo-600'}`}
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H10a1 1 0 01-1-1v-4z" /></svg>
+                            <span className="font-black text-[10px] uppercase tracking-widest">Public Booking</span>
+                        </button>
+
+                        <button
+                            onClick={() => setView(AppView.BOOKING_SELF_SERVICE)}
+                            className={`w-full flex items-center gap-4 px-8 py-4 rounded-[2rem] transition-all group ${view === AppView.BOOKING_SELF_SERVICE ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-50 hover:text-indigo-600'}`}
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                            <span className="font-black text-[10px] uppercase tracking-widest">Guest Self-Service</span>
+                        </button>
                         <button onClick={() => setView(AppView.HR)} className="flex items-center gap-4 p-4 rounded-[1.2rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95 group">
                             <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
@@ -129,6 +151,12 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
                             </div>
                             <span className="text-sm">Notifications</span>
+                        </button>
+                        <button onClick={() => setView(AppView.PRINTER_ROUTING)} className="flex items-center gap-4 p-4 rounded-[1.2rem] text-slate-400 hover:bg-white/5 hover:text-white transition-all font-black active:scale-95 group">
+                            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                            </div>
+                            <span className="text-sm">Printer Routing</span>
                         </button>
                         <button onClick={() => setView(AppView.WALLET_MANAGEMENT)} className="flex items-center gap-4 p-4 rounded-[1.2rem] text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 transition-all font-black active:scale-95 group">
                             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform border border-emerald-500/20">

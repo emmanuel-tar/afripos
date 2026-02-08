@@ -118,14 +118,14 @@ export const MOCK_PRODUCTS: Product[] = [
 ];
 
 export const MOCK_TABLES: Table[] = [
-  { id: 't1', number: '1', status: 'available', capacity: 4 },
-  { id: 't2', number: '2', status: 'occupied', capacity: 2 },
-  { id: 't3', number: '3', status: 'available', capacity: 4 },
-  { id: 't4', number: '4', status: 'reserved', capacity: 6 },
-  { id: 't5', number: '5', status: 'available', capacity: 2 },
-  { id: 't6', number: '6', status: 'dirty', capacity: 4 },
-  { id: 't7', number: '7', status: 'available', capacity: 8 },
-  { id: 't8', number: 'VIP 1', status: 'available', capacity: 10 },
+  { id: 't1', number: '1', status: 'available', capacity: 4, shape: 'SQUARE', roomId: 'r1', floorId: 'f1', x: 100, y: 100, rotation: 0, locationId: 'br-1', isActive: true },
+  { id: 't2', number: '2', status: 'occupied', capacity: 2, shape: 'SQUARE', roomId: 'r1', floorId: 'f1', x: 300, y: 100, rotation: 0, locationId: 'br-1', isActive: true },
+  { id: 't3', number: '3', status: 'available', capacity: 4, shape: 'ROUND', roomId: 'r1', floorId: 'f1', x: 500, y: 100, rotation: 0, locationId: 'br-1', isActive: true },
+  { id: 't4', number: '4', status: 'reserved', capacity: 6, shape: 'RECTANGULAR', roomId: 'r1', floorId: 'f1', x: 700, y: 100, rotation: 0, locationId: 'br-1', isActive: true },
+  { id: 't5', number: '5', status: 'available', capacity: 2, shape: 'SQUARE', roomId: 'r1', floorId: 'f1', x: 100, y: 300, rotation: 0, locationId: 'br-1', isActive: true },
+  { id: 't6', number: '6', status: 'dirty', capacity: 4, shape: 'SQUARE', roomId: 'r1', floorId: 'f1', x: 300, y: 300, rotation: 0, locationId: 'br-1', isActive: true },
+  { id: 't7', number: '7', status: 'available', capacity: 8, shape: 'RECTANGULAR', roomId: 'r1', floorId: 'f1', x: 500, y: 300, rotation: 0, locationId: 'br-1', isActive: true },
+  { id: 't8', number: 'VIP 1', status: 'available', capacity: 10, shape: 'ROUND', roomId: 'r2', floorId: 'f1', x: 700, y: 300, rotation: 0, locationId: 'br-1', isActive: true },
 ];
 
 export const LOW_STOCK_THRESHOLD_MULTIPLIER = 5;

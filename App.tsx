@@ -16,6 +16,10 @@ import NotificationSettingsView from './views/NotificationSettingsView';
 import SystemConfigView from './views/SystemConfigView';
 import OrderDetailView from './views/OrderDetailView';
 import WalletManagementView from './views/WalletManagementView';
+import PublicBookingPortal from './views/PublicBookingPortal';
+import BookingSelfServiceView from './views/BookingSelfServiceView';
+import StaffLoginView from './views/StaffLoginView';
+import PrinterRoutingView from './views/PrinterRoutingView';
 import DashboardSidebar from './components/DashboardSidebar';
 import { getSyncStatus } from './services/db';
 import { useAppStore } from './stores/useAppStore';
@@ -90,34 +94,36 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen w-screen bg-slate-100 flex flex-col">
-      <div className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center z-50 shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="text-indigo-600 font-black text-2xl tracking-tight uppercase">AFRI<span className="text-slate-800">POS</span></div>
-          {user && (
-            <div className="hidden md:flex items-center gap-2 border-l border-slate-200 pl-4">
-              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-black text-xs uppercase">
-                {user.name.split(' ').map(n => n[0]).join('')}
+      {!(view === AppView.PUBLIC_BOOKING || view === AppView.BOOKING_SELF_SERVICE) && (
+        <div className="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center z-50 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="text-indigo-600 font-black text-2xl tracking-tight uppercase">AFRI<span className="text-slate-800">POS</span></div>
+            {user && (
+              <div className="hidden md:flex items-center gap-2 border-l border-slate-200 pl-4">
+                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-black text-xs uppercase">
+                  {user.name.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div>
+                  <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest leading-none">{user.role}</div>
+                  <div className="text-sm font-black text-slate-800 leading-tight">{user.name}</div>
+                </div>
               </div>
-              <div>
-                <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest leading-none">{user.role}</div>
-                <div className="text-sm font-black text-slate-800 leading-tight">{user.name}</div>
-              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="bg-slate-50 px-4 py-1.5 rounded-full border border-slate-100 flex items-center gap-2">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Branch:</span>
+              <span className="text-xs font-black text-indigo-600">{currentBranch?.name || 'Loading...'}</span>
             </div>
-          )}
-        </div>
-        <div className="flex items-center gap-6">
-          <div className="bg-slate-50 px-4 py-1.5 rounded-full border border-slate-100 flex items-center gap-2">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Branch:</span>
-            <span className="text-xs font-black text-indigo-600">{currentBranch?.name || 'Loading...'}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`}></div>
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-              {isOnline ? 'ONLINE' : 'OFFLINE'}
-            </span>
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`}></div>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                {isOnline ? 'ONLINE' : 'OFFLINE'}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="flex-1 relative overflow-hidden">
         {error && (
@@ -127,6 +133,13 @@ const App: React.FC = () => {
             </svg>
             {error}
           </div>
+        )}
+
+        {view === AppView.PUBLIC_BOOKING && <PublicBookingPortal />}
+        {view === AppView.BOOKING_SELF_SERVICE && <BookingSelfServiceView />}
+
+        {view === AppView.STAFF_LOGIN && (
+          <StaffLoginView />
         )}
 
         {(view === AppView.LOGIN_ID || view === AppView.LOGIN_PASSWORD) && (
@@ -214,6 +227,7 @@ const App: React.FC = () => {
         {view === AppView.SYSTEM_CONFIG && <SystemConfigView onBack={() => setView(AppView.SETTINGS)} />}
         {view === AppView.CLOSE_BILL && <OrderDetailView onBack={() => setView(AppView.DASHBOARD)} />}
         {view === AppView.WALLET_MANAGEMENT && <WalletManagementView onBack={() => setView(AppView.DASHBOARD)} />}
+        {view === AppView.PRINTER_ROUTING && <PrinterRoutingView onBack={() => setView(AppView.SETTINGS)} />}
       </div>
       <Toaster position="top-right" richColors />
     </div>

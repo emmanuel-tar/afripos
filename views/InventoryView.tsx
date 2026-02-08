@@ -9,9 +9,10 @@ import { format } from 'date-fns';
 import { getProductProductionMetrics } from '../utils/inventoryUtils';
 
 import { toast } from 'sonner';
+// ItemHistory is a local component
 import ItemHistory from '../components/inventory/ItemHistory';
 
-import { GoogleGenAI } from "@google/genai";
+// Google GenAI will be imported dynamically
 
 interface InventoryViewProps {
   onBack: () => void;
@@ -97,24 +98,27 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
   }, [materials, searchTerm, selectedCategory]);
 
   const filteredSuppliers = useMemo(() => {
-    return suppliers.filter(s =>
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.categories.some(c => c.toLowerCase().includes(searchTerm.toLowerCase()))
+    return (suppliers || []).filter(s =>
+      s?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s?.categories || []).some(c => c?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [suppliers, searchTerm]);
 
   const groupedInventory = useMemo(() => {
     const groups: Record<string, Product[]> = {};
-    filteredInventory.forEach(item => {
-      if (!groups[item.category]) groups[item.category] = [];
-      groups[item.category].push(item);
+    (filteredInventory || []).forEach(item => {
+      if (!item) return;
+      const cat = item.category || 'Uncategorized';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
     });
     return groups;
   }, [filteredInventory]);
 
   const groupedMaterials = useMemo(() => {
     const groups: Record<string, RawMaterial[]> = {};
-    filteredMaterials.forEach(mat => {
+    (filteredMaterials || []).forEach(mat => {
+      if (!mat) return;
       const cat = mat.category || 'General';
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(mat);
@@ -157,9 +161,22 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
     }
     setIsGeneratingImage(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
+      if (!apiKey) throw new Error("API Key missing");
+
+      const GenAIModule = await import("@google/genai");
+
+      let ai: any;
+      if (GenAIModule.GoogleGenAI) {
+        ai = new (GenAIModule as any).GoogleGenAI({ apiKey });
+      } else if ((GenAIModule as any).createGoogleGenerativeAI) {
+        ai = (GenAIModule as any).createGoogleGenerativeAI({ apiKey });
+      } else {
+        throw new Error("Could not find GenAI constructor/factory");
+      }
+
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
+        model: 'gemini-1.5-flash', // Corrected model name to a known GA model
         contents: {
           parts: [{ text: `A professional, high-quality photograph of ${newItem.name} for a modern restaurant menu, clean slate or rustic background, bright commercial lighting, appetizing food photography.` }]
         }
@@ -200,7 +217,17 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
     let successCount = 0;
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+      const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
+      if (!apiKey) throw new Error("API Key missing");
+
+      const GenAIModule = await import("@google/genai");
+
+      let ai: any;
+      if (GenAIModule.GoogleGenAI) {
+        ai = new (GenAIModule as any).GoogleGenAI({ apiKey });
+      } else if ((GenAIModule as any).createGoogleGenerativeAI) {
+        ai = (GenAIModule as any).createGoogleGenerativeAI({ apiKey });
+      }
 
       for (const item of targets) {
         toast.info(`Generating image for ${item.name}...`);
@@ -393,8 +420,8 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
           quantity,
           previousStock,
           newStock,
-          userId: user.id,
-          userName: user.name,
+          userId: user?.id || 'system',
+          userName: user?.name || 'System',
           reason: reason || `Manual adjustment: ${type}`
         });
       }
@@ -531,34 +558,35 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
                   <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-3 py-1 rounded-full uppercase tracking-widest">{items.length} Items</span>
                 </div>
                 <div className="grid grid-cols-1 gap-6">
-                  {items.map(item => {
-                    const metrics = getProductProductionMetrics(item, materials);
+                  {(items || []).map(item => {
+                    if (!item) return null;
+                    const metrics = getProductProductionMetrics(item, materials || []);
                     return (
                       <div key={item.id} onClick={() => handleOpenEdit(item)} className={`bg-white p-6 rounded-[2.5rem] border shadow-sm flex flex-col md:flex-row gap-8 hover:shadow-xl transition-all cursor-pointer relative overflow-hidden ${metrics.status === 'UNAVAILABLE' ? 'border-red-200' : 'border-slate-200'}`}>
                         {metrics.status === 'UNAVAILABLE' && (
                           <div className="absolute top-0 right-0 bg-red-600 text-white px-6 py-1 font-black text-[10px] uppercase tracking-widest transform rotate-45 translate-x-8 translate-y-4">OUT OF STOCK</div>
                         )}
                         <div className="flex gap-6 flex-1">
-                          <img src={item.image} alt={item.name} className="w-36 h-36 rounded-3xl object-cover border border-slate-100 shadow-inner shrink-0" />
+                          <img src={item.image || 'https://picsum.photos/200/200?random=na'} alt={item.name} className="w-36 h-36 rounded-3xl object-cover border border-slate-100 shadow-inner shrink-0" />
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-3 py-1 rounded-full uppercase tracking-widest">{item.category}</span>
-                              <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${metrics.status === 'AVAILABLE' ? 'bg-indigo-50 text-indigo-600' : 'bg-red-50 text-red-600'}`}>{metrics.status}</span>
+                              <span className="text-[9px] font-black bg-slate-100 text-slate-500 px-3 py-1 rounded-full uppercase tracking-widest">{item.category || 'Uncategorized'}</span>
+                              <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${metrics.status === 'AVAILABLE' ? 'bg-indigo-50 text-indigo-600' : 'bg-red-50 text-red-600'}`}>{metrics?.status || 'UNKNOWN'}</span>
                             </div>
-                            <div className="font-black text-2xl text-slate-800 mb-1">{item.name}</div>
+                            <div className="font-black text-2xl text-slate-800 mb-1">{item.name || 'Unnamed Item'}</div>
                             <div className="flex gap-8 mt-4">
                               <div>
                                 <div className="text-[9px] font-black text-slate-400 uppercase mb-1">Selling</div>
-                                <div className="text-xl font-black text-slate-900">{CURRENCY}{item.price.toLocaleString()}</div>
+                                <div className="text-xl font-black text-slate-900">{CURRENCY}{(item.price || 0).toLocaleString()}</div>
                               </div>
                               <div>
                                 <div className="text-[9px] font-black text-slate-400 uppercase mb-1">Cost</div>
-                                <div className="text-xl font-black text-emerald-600">{CURRENCY}{metrics.totalCost.toLocaleString()}</div>
+                                <div className="text-xl font-black text-emerald-600">{CURRENCY}{(metrics?.totalCost || 0).toLocaleString()}</div>
                               </div>
                               <div>
                                 <div className="text-[9px] font-black text-slate-400 uppercase mb-1">Margin</div>
-                                <div className={`text-xl font-black ${item.price - metrics.totalCost > 0 ? 'text-indigo-600' : 'text-red-600'}`}>
-                                  {item.price > 0 ? (((item.price - metrics.totalCost) / item.price) * 100).toFixed(0) : 0}%
+                                <div className={`text-xl font-black ${(item.price || 0) - (metrics?.totalCost || 0) > 0 ? 'text-indigo-600' : 'text-red-600'}`}>
+                                  {(item.price || 0) > 0 ? ((((item.price || 0) - (metrics?.totalCost || 0)) / (item.price || 1)) * 100).toFixed(0) : 0}%
                                 </div>
                               </div>
                             </div>
@@ -581,46 +609,49 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
             {(Object.entries(groupedMaterials) as [string, RawMaterial[]][]).sort().map(([category, mats]) => (
               <div key={category} className="space-y-6">
                 <div className="flex items-center gap-4">
-                  <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest">{category}</h2>
+                  <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest">{category || 'General'}</h2>
                   <div className="h-px bg-slate-100 flex-1"></div>
-                  <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-3 py-1 rounded-full uppercase tracking-widest">{mats.length} Items</span>
+                  <span className="text-[10px] font-black text-slate-400 bg-slate-50 px-3 py-1 rounded-full uppercase tracking-widest">{(mats || []).length} Items</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {mats.map(mat => (
-                    <div key={mat.id} className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden hover:shadow-xl hover:border-indigo-600 transition-all cursor-pointer group flex flex-col">
-                      <div className="aspect-square w-full bg-slate-100 relative" onClick={() => handleOpenEdit(mat)}>
-                        {mat.image ? (
-                          <img src={mat.image} alt={mat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
-                            <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                            <span className="text-[10px] font-black uppercase tracking-widest">No Image</span>
-                          </div>
-                        )}
-                        <div className={`absolute bottom-4 right-4 px-3 py-1 rounded-full text-[10px] font-black shadow-sm ${mat.quantity <= (mat.minStockAlert || 5) ? 'bg-red-500 text-white' : 'bg-white/90 text-slate-800 backdrop-blur'}`}>
-                          {mat.quantity} {mat.unit}
-                        </div>
-                      </div>
-                      <div className="p-6 flex-1 flex flex-col justify-between">
-                        <div onClick={() => handleOpenEdit(mat)}>
-                          <div className="text-lg font-black text-slate-800 mb-1">{mat.name}</div>
-                          <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
-                            {CURRENCY}{mat.costPerUnit.toLocaleString()} / {mat.unit}
-                          </div>
-                        </div>
-                        <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
-                          <div className="flex gap-2">
-                            <button onClick={() => handleOpenAdjustment(mat, 'RAW_MATERIAL')} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:bg-indigo-50 px-3 py-2 rounded-xl transition-colors">Adjust</button>
-                            <button onClick={() => handleOpenHistory(mat.id)} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:bg-indigo-50 px-3 py-2 rounded-xl transition-colors">Log</button>
-                            <button onClick={() => handleDeleteItem(mat, 'MATERIAL')} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:bg-red-50 px-3 py-2 rounded-xl transition-colors">Delete</button>
-                          </div>
-                          {mat.quantity <= (mat.minStockAlert || 5) && (
-                            <span className="text-[9px] font-black text-red-500 uppercase">Low Stock</span>
+                  {(mats || []).map(mat => {
+                    if (!mat) return null;
+                    return (
+                      <div key={mat.id} className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden hover:shadow-xl hover:border-indigo-600 transition-all cursor-pointer group flex flex-col">
+                        <div className="aspect-square w-full bg-slate-100 relative" onClick={() => handleOpenEdit(mat)}>
+                          {mat.image ? (
+                            <img src={mat.image} alt={mat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                              <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                              <span className="text-[10px] font-black uppercase tracking-widest">No Image</span>
+                            </div>
                           )}
+                          <div className={`absolute bottom-4 right-4 px-3 py-1 rounded-full text-[10px] font-black shadow-sm ${(mat.quantity || 0) <= (mat.minStockAlert || 5) ? 'bg-red-500 text-white' : 'bg-white/90 text-slate-800 backdrop-blur'}`}>
+                            {mat.quantity || 0} {mat.unit || 'units'}
+                          </div>
+                        </div>
+                        <div className="p-6 flex-1 flex flex-col justify-between">
+                          <div onClick={() => handleOpenEdit(mat)}>
+                            <div className="text-lg font-black text-slate-800 mb-1">{mat.name || 'Unnamed Material'}</div>
+                            <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                              {CURRENCY}{(mat.costPerUnit || 0).toLocaleString()} / {mat.unit || 'unit'}
+                            </div>
+                          </div>
+                          <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                            <div className="flex gap-2">
+                              <button onClick={() => handleOpenAdjustment(mat, 'RAW_MATERIAL')} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:bg-indigo-50 px-3 py-2 rounded-xl transition-colors">Adjust</button>
+                              <button onClick={() => handleOpenHistory(mat.id)} className="text-[9px] font-black text-indigo-500 uppercase tracking-widest hover:bg-indigo-50 px-3 py-2 rounded-xl transition-colors">Log</button>
+                              <button onClick={() => handleDeleteItem(mat, 'MATERIAL')} className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:bg-red-50 px-3 py-2 rounded-xl transition-colors">Delete</button>
+                            </div>
+                            {(mat.quantity || 0) <= (mat.minStockAlert || 5) && (
+                              <span className="text-[9px] font-black text-red-500 uppercase">Low Stock</span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -629,7 +660,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({ onBack }) => {
           <div className="max-w-4xl mx-auto">
             <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest mb-8">System-wide Activity Log</h2>
             <ItemHistory
-              transactions={transactions.sort((a, b) => b.timestamp - a.timestamp)}
+              transactions={[...transactions].sort((a, b) => b.timestamp - a.timestamp)}
               unit="items"
             />
           </div>

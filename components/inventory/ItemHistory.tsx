@@ -9,6 +9,7 @@ interface ItemHistoryProps {
 }
 
 const ItemHistory: React.FC<ItemHistoryProps> = ({ transactions, unit }) => {
+    const safeTransactions = Array.isArray(transactions) ? transactions : [];
     const getBadgeColor = (type: string) => {
         switch (type) {
             case 'IN':
@@ -26,7 +27,7 @@ const ItemHistory: React.FC<ItemHistoryProps> = ({ transactions, unit }) => {
         }
     };
 
-    if (transactions.length === 0) {
+    if (safeTransactions.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200">
                 <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-sm text-slate-300">
@@ -39,38 +40,38 @@ const ItemHistory: React.FC<ItemHistoryProps> = ({ transactions, unit }) => {
 
     return (
         <div className="space-y-4">
-            {transactions.map((trx) => (
-                <div key={trx.id} className="bg-white border border-slate-100 p-5 rounded-[2rem] flex items-center gap-6 hover:shadow-md transition-shadow">
+            {safeTransactions.map((trx) => (
+                <div key={trx?.id || Math.random().toString()} className="bg-white border border-slate-100 p-5 rounded-[2rem] flex items-center gap-6 hover:shadow-md transition-shadow">
                     <div className="shrink-0 flex flex-col items-center justify-center w-16 h-16 bg-slate-50 rounded-2xl">
-                        <div className="text-[10px] font-black text-slate-400 uppercase">{format(trx.timestamp, 'MMM')}</div>
-                        <div className="text-xl font-black text-slate-800 leading-none">{format(trx.timestamp, 'dd')}</div>
+                        <div className="text-[10px] font-black text-slate-400 uppercase">{format(trx?.timestamp || Date.now(), 'MMM')}</div>
+                        <div className="text-xl font-black text-slate-800 leading-none">{format(trx?.timestamp || Date.now(), 'dd')}</div>
                     </div>
 
                     <div className="flex-1">
                         <div className="flex items-center gap-3 mb-1">
-                            <span className={`text-[9px] font-black px-3 py-1 rounded-full border uppercase tracking-widest ${getBadgeColor(trx.type)}`}>
-                                {trx.type}
+                            <span className={`text-[9px] font-black px-3 py-1 rounded-full border uppercase tracking-widest ${getBadgeColor(trx?.type || 'OTHER')}`}>
+                                {trx?.type || 'UNKNOWN'}
                             </span>
                             <span className="text-[10px] font-black text-slate-400 lowercase tracking-widest">
-                                by {trx.userName} • {format(trx.timestamp, 'HH:mm')}
+                                by {trx?.userName || 'System'} • {format(trx?.timestamp || Date.now(), 'HH:mm')}
                             </span>
                         </div>
                         <div className="text-sm font-black text-slate-800">
-                            {trx.reason || (trx.type === 'SALE' ? `Order ${trx.referenceId}` : trx.type === 'PURCHASE' ? `Purchase from Supplier` : 'Manual Adjustment')}
+                            {trx?.reason || (trx?.type === 'SALE' ? `Order ${trx?.referenceId}` : trx?.type === 'PURCHASE' ? `Purchase from Supplier` : 'Manual Adjustment')}
                         </div>
-                        {trx.totalCost && (
+                        {trx?.totalCost && (
                             <div className="text-[10px] font-black text-emerald-600 uppercase mt-1">
-                                Value: {CURRENCY}{trx.totalCost.toLocaleString()} ({CURRENCY}{trx.unitPrice?.toLocaleString()}/{unit})
+                                Value: {CURRENCY}{trx.totalCost.toLocaleString()} ({CURRENCY}{(trx.unitPrice || 0).toLocaleString()}/{unit})
                             </div>
                         )}
                     </div>
 
                     <div className="text-right shrink-0">
-                        <div className={`text-lg font-black ${trx.newStock > trx.previousStock ? 'text-emerald-500' : 'text-red-500'}`}>
-                            {trx.newStock > trx.previousStock ? '+' : ''}{trx.quantity} {unit}
+                        <div className={`text-lg font-black ${(trx?.newStock || 0) > (trx?.previousStock || 0) ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {(trx?.newStock || 0) > (trx?.previousStock || 0) ? '+' : ''}{trx?.quantity || 0} {unit}
                         </div>
                         <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                            Stock: {trx.newStock} {unit}
+                            Stock: {trx?.newStock || 0} {unit}
                         </div>
                     </div>
                 </div>

@@ -11,6 +11,7 @@ interface WalletState {
     deduct: (customerId: string, walletType: WalletType, amount: number, staffId: string, staffName: string, referenceId?: string, referenceType?: any, notes?: string) => Promise<boolean>;
     lockFunds: (customerId: string, amount: number, staffId: string, staffName: string, reservationId: string) => Promise<boolean>;
     releaseFunds: (customerId: string, amount: number, staffId: string, staffName: string, reservationId: string) => Promise<void>;
+    transfer: (customerId: string, from: WalletType, to: WalletType, amount: number, staffId: string, staffName: string, notes?: string) => Promise<boolean>;
     expirePromotional: (customerId: string, staffId: string, staffName: string) => Promise<void>;
 }
 
@@ -199,6 +200,66 @@ export const useWalletStore = create<WalletState>((set, get) => ({
 
         await crmStore.updateCustomer(updatedCustomer);
         set(state => ({ transactions: [transaction, ...state.transactions] }));
+    },
+
+    transfer: async (customerId, from, to, amount, staffId, staffName, notes) => {
+        const crmStore = useCRMStore.getState();
+        const customer = crmStore.customers.find(c => c.id === customerId);
+        if (!customer || from === to) return false;
+
+        const currentWallets = customer.wallets || { cash: 0, promotional: 0, refund: 0, locked: 0 };
+        const fromBalance = from === 'CASH' ? currentWallets.cash :
+            from === 'PROMOTIONAL' ? currentWallets.promotional : currentWallets.refund;
+
+        if (fromBalance < amount) return false;
+
+        const toBalance = to === 'CASH' ? currentWallets.cash :
+            to === 'PROMOTIONAL' ? currentWallets.promotional : currentWallets.refund;
+
+        const newWallets = {
+            ...currentWallets,
+            [from.toLowerCase()]: fromBalance - amount,
+            [to.toLowerCase()]: toBalance + amount
+        };
+
+        const txId = `WLT-TRSF-${Date.now()}`;
+        const transaction: WalletTransaction = {
+            id: txId,
+            customerId,
+            walletType: from,
+            type: 'TRANSFER',
+            amount,
+            balanceBefore: fromBalance,
+            balanceAfter: fromBalance - amount,
+            staffId,
+            staffName,
+            notes: `${notes || 'Transfer to ' + to}`,
+            timestamp: Date.now()
+        };
+
+        const receivingTx: WalletTransaction = {
+            id: txId + '-IN',
+            customerId,
+            walletType: to,
+            type: 'TOP_UP',
+            amount,
+            balanceBefore: toBalance,
+            balanceAfter: toBalance + amount,
+            staffId,
+            staffName,
+            notes: `Transfer from ${from}`,
+            timestamp: Date.now()
+        };
+
+        const updatedCustomer: Customer = {
+            ...customer,
+            wallets: newWallets,
+            creditBalance: newWallets.cash + newWallets.promotional + newWallets.refund
+        };
+
+        await crmStore.updateCustomer(updatedCustomer);
+        set(state => ({ transactions: [transaction, receivingTx, ...state.transactions] }));
+        return true;
     },
 
     expirePromotional: async (customerId, staffId, staffName) => {

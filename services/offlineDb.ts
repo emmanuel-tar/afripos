@@ -10,7 +10,10 @@ import {
     NotificationTemplate,
     BranchNotificationSetting,
     NotificationLog,
-    Reservation
+    Reservation,
+    Floor,
+    Room,
+    Table as PosTable
 } from '../types';
 
 export class AfriPOSDatabase extends Dexie {
@@ -36,10 +39,13 @@ export class AfriPOSDatabase extends Dexie {
     notificationSettings!: Table<BranchNotificationSetting>;
     notificationLogs!: Table<NotificationLog>;
     reservations!: Table<Reservation>;
+    floors!: Table<Floor>;
+    rooms!: Table<Room>;
+    tables!: Table<PosTable>;
 
     constructor() {
         super('AfriPOSDatabase');
-        this.version(1).stores({
+        this.version(2).stores({
             orders: 'id, tableNumber, status, timestamp',
             products: 'id, name, category',
             materials: 'id, name, category',
@@ -63,7 +69,8 @@ export class AfriPOSDatabase extends Dexie {
             notificationLogs: 'id, timestamp, customerId, reservationId, status',
             reservations: 'id, customerName, date, status, branchId',
             floors: 'id, order',
-            rooms: 'id, floorId, order'
+            rooms: 'id, floorId, order',
+            tables: 'id, roomId, locationId'
         });
     }
 }

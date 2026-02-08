@@ -12,6 +12,7 @@ interface ReservationState {
     addReservation: (reservation: Reservation, branch: Branch) => Promise<void>;
     updateReservationStatus: (id: string, status: ReservationStatus, branch: Branch) => Promise<void>;
     deleteReservation: (id: string) => Promise<void>;
+    fetchReservationByRef: (reference: string, phone: string) => Promise<Reservation | null>;
 }
 
 export const useReservationStore = create<ReservationState>((set, get) => ({
@@ -32,9 +33,11 @@ export const useReservationStore = create<ReservationState>((set, get) => ({
     addReservation: async (reservation, branch) => {
         const newReservation: Reservation = {
             ...reservation,
-            paymentStatus: reservation.totalDepositRequired > 0 ? 'UNPAID' : 'FULLY_PAID',
+            paymentStatus: (reservation.totalDepositRequired || 0) > 0 ? 'UNPAID' : 'FULLY_PAID',
             depositPaid: 0,
-            paymentDeadline: reservation.totalDepositRequired > 0 ? Date.now() + (2 * 60 * 60 * 1000) : undefined // 2 hours deadline
+            paymentDeadline: (reservation.totalDepositRequired || 0) > 0 ? Date.now() + (2 * 60 * 60 * 1000) : undefined, // 2 hours deadline
+            source: reservation.source || 'INTERNAL',
+            reference: reservation.reference || Math.random().toString(36).substring(2, 8).toUpperCase()
         };
         await reservationDb.saveReservation(newReservation);
         set(state => ({ reservations: [newReservation, ...state.reservations] }));
@@ -42,7 +45,7 @@ export const useReservationStore = create<ReservationState>((set, get) => ({
         // Trigger Notification
         if (reservation.sendConfirmation) {
             const notificationStore = useNotificationStore.getState();
-            await notificationStore.sendNotification('RESERVATION_CREATED', reservation, branch);
+            await notificationStore.sendNotification('RESERVATION_CREATED', newReservation, branch);
         }
     },
 
@@ -79,5 +82,13 @@ export const useReservationStore = create<ReservationState>((set, get) => ({
         set(state => ({
             reservations: state.reservations.filter(r => r.id !== id)
         }));
+    },
+
+    fetchReservationByRef: async (reference, phone) => {
+        const reservations = await reservationDb.getReservations();
+        return reservations.find(r =>
+            r.reference.toUpperCase() === reference.toUpperCase() &&
+            r.customerPhone === phone
+        ) || null;
     }
 }));
