@@ -49,3 +49,7 @@ export const clearAllData = async () => {
 export const getSyncStatus = async () => {
   return await db.orders.count();
 };
+
+export const getTables = async () => {
+  return await db.tables.toArray();
+};

@@ -54,8 +54,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess }) => {
     };
 
     return (
-        <div className="h-full flex items-center justify-center p-4">
-            <div className={`w-full max-sm ${isShaking ? 'animate-shake' : ''}`}>
+        <div className="h-screen w-screen flex items-center justify-center p-4 bg-slate-50 overflow-hidden">
+            <div className={`w-full max-w-md ${isShaking ? 'animate-shake' : ''}`}>
                 <Keypad
                     title={view === AppView.LOGIN_ID ? "Staff System ID" : "Secure Entry PIN"}
                     currentValue={view === AppView.LOGIN_ID ? employeeId : password}

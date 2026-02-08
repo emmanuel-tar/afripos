@@ -51,12 +51,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ order, isOpen, onComplete, 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
 
-            <div className="relative w-full max-w-5xl bg-slate-50 rounded-[3rem] shadow-2xl overflow-hidden flex animate-in zoom-in-95 duration-200">
+            <div className="relative w-full max-w-[95%] h-[90vh] bg-slate-50 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-95 duration-200">
                 {/* Left: Summary */}
-                <div className="w-[400px] bg-white border-r border-slate-200 flex flex-col p-10">
+                <div className="md:w-[400px] w-full bg-white border-r border-slate-200 flex flex-col p-6 sm:p-10 shrink-0">
                     <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-8">Secure Checkout</h3>
 
                     <div className="space-y-6 mb-auto">
@@ -95,7 +95,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ order, isOpen, onComplete, 
                 </div>
 
                 {/* Right: Interaction */}
-                <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 flex flex-col overflow-hidden h-full">
                     <div className="p-10 border-b border-slate-200 bg-white flex justify-between items-center">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Payment Method</span>
                         <button onClick={onClose} className="w-10 h-10 rounded-xl hover:bg-slate-100 flex items-center justify-center text-slate-400 transition-colors">

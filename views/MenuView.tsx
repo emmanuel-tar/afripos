@@ -23,6 +23,8 @@ import { CashTenderedModal } from '../components/pos/modals/CashTenderedModal';
 import { SplitPaymentModal } from '../components/pos/modals/SplitPaymentModal';
 import { PrintOptionsModal } from '../components/pos/modals/PrintOptionsModal';
 import { CustomerSelectModal } from '../components/pos/modals/CustomerSelectModal';
+import { TransferModal } from '../components/pos/modals/TransferModal';
+import { SplitTableModal } from '../components/pos/modals/SplitTableModal';
 
 interface MenuViewProps {
   tableNumber: string;
@@ -57,6 +59,7 @@ const MenuView: React.FC<MenuViewProps> = ({
   const [isPrintOptionsOpen, setIsPrintOptionsOpen] = useState(false);
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
   const [isCustomerSelectOpen, setIsCustomerSelectOpen] = useState(false);
+  const [isSplitTableOpen, setIsSplitTableOpen] = useState(false);
 
   const { customers, fetchCustomers } = useCRMStore();
 
@@ -339,6 +342,11 @@ const MenuView: React.FC<MenuViewProps> = ({
       } catch (error) {
         console.error('Error printing kitchen order:', error);
       }
+
+      // Auto-navigate back to dashboard/map
+      setTimeout(() => {
+        onBack();
+      }, 500);
     }
 
     // Instead of raw saveOrder, use syncStore to handle offline queueing
@@ -476,7 +484,7 @@ const MenuView: React.FC<MenuViewProps> = ({
         branchSettings={branchSettings}
         onVoidOrder={() => { clearCart(); }} // Should ideally be deleteOrder logic
         onTransfer={() => setIsTransferModalOpen(true)}
-        onSplit={() => toast.info("Split Bill Feature Coming Soon")}
+        onSplit={() => setIsSplitTableOpen(true)}
         onDiscount={() => {
           const p = prompt("Enter discount %");
           if (p) setDiscountPercent(parseFloat(p));
@@ -487,6 +495,15 @@ const MenuView: React.FC<MenuViewProps> = ({
         onPrint={handlePrintClick}
         onItemTransfer={(item) => toast.info(`Transfer ${item.name}`)}
         isFastOrder={isFastOrder}
+      />
+
+      <SplitTableModal
+        currentTableNumber={tableNumber}
+        isOpen={isSplitTableOpen}
+        onClose={() => setIsSplitTableOpen(false)}
+        onSplitComplete={() => {
+          onBack(); // Refresh view
+        }}
       />
 
       {/* Modals */}
@@ -561,6 +578,16 @@ const MenuView: React.FC<MenuViewProps> = ({
           setCustomerId(customer.id);
           setIsCustomerSelectOpen(false);
           toast.success(`Guest set to ${customer.name}`);
+        }}
+      />
+
+      <TransferModal
+        currentTableNumber={tableNumber}
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        onTransferComplete={(newTable) => {
+          toast.success(`Order moved to Table ${newTable}`);
+          onBack(); // Go back to map to see new state
         }}
       />
 
