@@ -22,7 +22,8 @@ export enum AppView {
   PUBLIC_BOOKING = 'PUBLIC_BOOKING',
   BOOKING_SELF_SERVICE = 'BOOKING_SELF_SERVICE',
   STAFF_LOGIN = 'STAFF_LOGIN',
-  PRINTER_ROUTING = 'PRINTER_ROUTING'
+  PRINTER_ROUTING = 'PRINTER_ROUTING',
+  DEVICE_MANAGEMENT = 'DEVICE_MANAGEMENT'
 }
 
 export type SyncStatus = 'SYNCED' | 'QUEUED' | 'SYNCING' | 'ERROR';
@@ -310,7 +311,7 @@ export interface CartItem extends Product {
   isVoided?: boolean;
 }
 
-export type PaymentMethod = 'CASH' | 'POS' | 'TRANSFER' | 'COMPLIMENTARY' | 'WALLET';
+export type PaymentMethod = 'CASH' | 'POS' | 'TRANSFER' | 'COMPLIMENTARY' | 'WALLET' | 'CREDIT';
 
 // Payment interface for split payments
 export interface Payment {
@@ -347,7 +348,7 @@ export interface Order {
   payments?: Payment[]; // For split payments
   timestamp: number;
   scheduledTime?: number;
-  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'scheduled' | 'hold';
+  status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'scheduled' | 'hold' | 'served';
   locationId: string;
   cashierId: string;
   cashierName?: string;
@@ -568,4 +569,24 @@ export interface ManufacturingProcess {
   recipes: string[]; // Recipe IDs that use this process
   createdBy: string;
   createdAt: number;
+}
+export type DeviceRole = 'WAITER' | 'CASHPOINT' | 'KDS' | 'ADMIN';
+
+export interface Device {
+  id: string;
+  name: string;
+  type: DeviceRole;
+  status: 'PENDING' | 'APPROVED' | 'REVOKED';
+  ip?: string;
+  token?: string;
+  lastSeen?: number;
+  pairedAt?: number;
+}
+
+export interface PairingRequest {
+  id: string;
+  deviceName: string;
+  deviceType: DeviceRole;
+  ip: string;
+  timestamp: number;
 }

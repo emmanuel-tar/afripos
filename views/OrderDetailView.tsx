@@ -4,6 +4,7 @@ import { getActiveTableOrder, saveOrder } from '../services/db';
 import { useAppStore } from '../stores/useAppStore';
 import { useCartStore } from '../stores/useCartStore';
 import { toast } from 'sonner';
+import { Cloud, CloudOff, Clock, User as UserIcon, RefreshCcw } from 'lucide-react';
 import PaymentModal from '../components/pos/PaymentModal';
 
 const OrderDetailView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -76,8 +77,24 @@ const OrderDetailView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <div className="flex items-center gap-3">
                             <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tight">Table {order.tableNumber}</h2>
                             <span className="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-200">ACTIVE SESSION</span>
+
+                            {/* Sync Status Badge */}
+                            <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${order.syncStatus === 'SYNCED'
+                                    ? 'bg-green-50 text-green-600 border-green-200'
+                                    : 'bg-amber-50 text-amber-600 border-amber-200 animate-pulse'
+                                }`}>
+                                {order.syncStatus === 'SYNCED' ? <Cloud className="w-3 h-3" /> : <RefreshCcw className="w-3 h-3 animate-spin" />}
+                                {order.syncStatus === 'SYNCED' ? 'Local Server: Synced' : 'Syncing to Server...'}
+                            </div>
                         </div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Order ID: #{order.id.slice(-8).toUpperCase()} • Started {duration}m ago</p>
+                        <div className="flex items-center gap-4 mt-1">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                <Clock className="w-3 h-3" /> Started {duration}m ago
+                            </p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                <UserIcon className="w-3 h-3" /> Waiter: {order.cashierName || 'System'}
+                            </p>
+                        </div>
                     </div>
                 </div>
 

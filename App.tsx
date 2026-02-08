@@ -19,16 +19,26 @@ import WalletManagementView from './views/WalletManagementView';
 import PublicBookingPortal from './views/PublicBookingPortal';
 import BookingSelfServiceView from './views/BookingSelfServiceView';
 import StaffLoginView from './views/StaffLoginView';
+import TerminalBindingView from './views/TerminalBindingView';
+import ShiftManagementView from './views/ShiftManagementView';
+import NotificationListener from './components/NotificationListener';
 import PrinterRoutingView from './views/PrinterRoutingView';
+import { syncManager } from './services/syncManager';
 import DashboardSidebar from './components/DashboardSidebar';
+import ServerConnectionView from './views/ServerConnectionView';
+import DeviceManagementView from './views/DeviceManagementView';
 import { getSyncStatus } from './services/db';
 import { useAppStore } from './stores/useAppStore';
 import { useCartStore } from './stores/useCartStore';
+import { useTerminalStore } from './stores/useTerminalStore';
+import { useDeviceStore } from './stores/useDeviceStore';
 import { Toaster } from 'sonner';
+import { RefreshCcw } from 'lucide-react';
 import { migrateFromLocalStorage } from './services/offlineDb';
 
 const App: React.FC = () => {
   const { view, viewParams, setView, user, currentBranch, isOnline, setIsOnline, error, setError } = useAppStore();
+  const { isBound, activeShift } = useTerminalStore();
   const { setTableNumber, clearCart } = useCartStore();
 
   const playErrorSound = useCallback(() => {
@@ -50,6 +60,29 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Role-Based Routing Logic
+  useEffect(() => {
+    const isAtGateway = view === AppView.STAFF_LOGIN || view === AppView.LOGIN_ID || view === AppView.LOGIN_PASSWORD;
+    if (user && activeShift && isAtGateway) {
+      // Automatically route based on role after shift start
+      switch (user.role) {
+        case 'waiter':
+          setView(AppView.MENU, { initialCheckout: false });
+          break;
+        case 'chef':
+        case 'bartender':
+          setView(AppView.STATION_DISPLAY);
+          break;
+        case 'manager':
+        case 'admin':
+          setView(AppView.DASHBOARD);
+          break;
+        default:
+          setView(AppView.DASHBOARD);
+      }
+    }
+  }, [user, activeShift, setView, view]);
+
   // Sync online status and error effects
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -69,6 +102,12 @@ const App: React.FC = () => {
     }
   }, [error, playErrorSound]);
 
+  // Initialize Sync Engine
+  useEffect(() => {
+    syncManager.startEngine();
+    return () => syncManager.stopEngine();
+  }, []);
+
   // Migrate database from localStorage to Dexie on startup
   useEffect(() => {
     migrateFromLocalStorage();
@@ -87,6 +126,14 @@ const App: React.FC = () => {
   const onLoginSuccess = () => {
     setView(AppView.DASHBOARD);
   };
+
+  // GATEWAY FLOW LOGIC
+  const { currentDevice } = useDeviceStore();
+  if (!currentDevice || currentDevice.status !== 'APPROVED') return <ServerConnectionView />;
+
+  if (!isBound) return <TerminalBindingView />;
+  if (!user) return <StaffLoginView />;
+  if (!activeShift) return <ShiftManagementView />;
 
   const canAccessSettings = user?.role === 'admin' || user?.role === 'manager';
   const canAccessInventory = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'chef';
@@ -120,6 +167,12 @@ const App: React.FC = () => {
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                 {isOnline ? 'ONLINE' : 'OFFLINE'}
               </span>
+            </div>
+
+            {/* Local Server Sync Status */}
+            <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-full border border-slate-200">
+              <RefreshCcw className="w-3 h-3 text-indigo-500" />
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Local Server Active</span>
             </div>
           </div>
         </div>
@@ -228,9 +281,11 @@ const App: React.FC = () => {
         {view === AppView.CLOSE_BILL && <OrderDetailView onBack={() => setView(AppView.DASHBOARD)} />}
         {view === AppView.WALLET_MANAGEMENT && <WalletManagementView onBack={() => setView(AppView.DASHBOARD)} />}
         {view === AppView.PRINTER_ROUTING && <PrinterRoutingView onBack={() => setView(AppView.SETTINGS)} />}
+        {view === AppView.DEVICE_MANAGEMENT && <DeviceManagementView onBack={() => setView(AppView.SETTINGS)} />}
       </div>
       <Toaster position="top-right" richColors />
-    </div>
+      <NotificationListener />
+    </div >
   );
 };
 

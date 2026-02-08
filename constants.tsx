@@ -34,10 +34,10 @@ export const DEFAULT_BRANCHES: Branch[] = [
     enableServiceCharge: true,
     enablePrepareLater: true,
     printers: [
-      { id: 'p1', name: 'Kitchen Printer', location: 'KITCHEN', enabled: true, isDefault: true },
-      { id: 'p2', name: 'Bar Printer', location: 'BAR', enabled: true, isDefault: true },
-      { id: 'p3', name: 'Grill Station Printer', location: 'GRILL', enabled: true, isDefault: true },
-      { id: 'p4', name: 'Store Printer', location: 'STORE', enabled: true, isDefault: false }
+      { id: 'p1', name: 'Kitchen Printer', location: 'KITCHEN', enabled: true, isDefault: true, connectionType: 'NETWORK' },
+      { id: 'p2', name: 'Bar Printer', location: 'BAR', enabled: true, isDefault: true, connectionType: 'NETWORK' },
+      { id: 'p3', name: 'Grill Station Printer', location: 'GRILL', enabled: true, isDefault: true, connectionType: 'NETWORK' },
+      { id: 'p4', name: 'Store Printer', location: 'STORE', enabled: true, isDefault: false, connectionType: 'NETWORK' }
     ]
   },
   {
@@ -50,8 +50,8 @@ export const DEFAULT_BRANCHES: Branch[] = [
     enableServiceCharge: true,
     enablePrepareLater: false,
     printers: [
-      { id: 'p5', name: 'Main Kitchen', location: 'KITCHEN', enabled: true, isDefault: true },
-      { id: 'p6', name: 'Bar Station', location: 'BAR', enabled: true, isDefault: true }
+      { id: 'p5', name: 'Main Kitchen', location: 'KITCHEN', enabled: true, isDefault: true, connectionType: 'NETWORK' },
+      { id: 'p6', name: 'Bar Station', location: 'BAR', enabled: true, isDefault: true, connectionType: 'NETWORK' }
     ]
   }
 ];
@@ -130,3 +130,8 @@ export const MOCK_TABLES: Table[] = [
 
 export const LOW_STOCK_THRESHOLD_MULTIPLIER = 5;
 export const SCARCITY_PREMIUM = 1.25;
+
+// Local Server & Sync Config
+export const LOCAL_SERVER_URL = 'http://192.168.1.100:8080/api';
+export const SYNC_INTERVAL_MS = 10000; // 10 seconds
+export const MOCK_SYNC_DELAY_MS = 1500;

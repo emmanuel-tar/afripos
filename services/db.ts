@@ -3,11 +3,26 @@ import { Order } from '../types';
 import { db } from './offlineDb';
 
 export const saveOrder = async (order: Order) => {
-  await db.orders.put(order);
+  const updatedOrder: Order = {
+    ...order,
+    syncStatus: order.syncStatus === 'SYNCED' ? 'QUEUED' : (order.syncStatus || 'QUEUED')
+  };
+  await db.orders.put(updatedOrder);
 };
 
 export const getOrders = async (): Promise<Order[]> => {
   return await db.orders.toArray();
+};
+
+export const getUnsyncedOrders = async (): Promise<Order[]> => {
+  return await db.orders
+    .where('syncStatus')
+    .equals('QUEUED')
+    .toArray();
+};
+
+export const markAsSynced = async (orderId: string) => {
+  await db.orders.update(orderId, { syncStatus: 'SYNCED' });
 };
 
 export const deleteOrder = async (orderId: string) => {

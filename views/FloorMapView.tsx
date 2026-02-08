@@ -5,6 +5,9 @@ import { TableStatus, Order, Table } from '../types';
 import { getOrders, transferOrderToTable } from '../services/db';
 import { useTableStore } from '../stores/useTableStore';
 import { CreateTableModal, TransferTableModal, JoinTableModal } from '../components/pos/modals/TableManagementModals';
+import { Bell, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { saveOrder as dbSaveOrder } from '../services/db';
 
 interface FloorMapViewProps {
   onBack: () => void;
@@ -57,7 +60,8 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
     return 'available';
   };
 
-  const getStatusColor = (status: TableStatus) => {
+  const getStatusColor = (status: TableStatus, isReady: boolean = false) => {
+    if (isReady) return 'bg-green-500 text-white shadow-[0_0_25px_rgba(34,197,94,0.6)] animate-pulse ring-4 ring-green-100';
     switch (status) {
       case 'occupied': return 'bg-indigo-600 text-white shadow-indigo-200 ring-4 ring-indigo-50';
       case 'reserved': return 'bg-amber-500 text-white';
@@ -169,10 +173,15 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
               onClick={() => handleTableClick(table)}
               className={`
                 aspect-square rounded-[3rem] shadow-xl flex flex-col items-center justify-center transition-all active:scale-95 group relative
-                ${getStatusColor(status)}
+                ${getStatusColor(status, order?.status === 'ready')}
                 ${isJoined ? 'ring-4 ring-offset-2 ring-indigo-300' : ''}
               `}
             >
+              {order?.status === 'ready' && (
+                <div className="absolute -top-2 -left-2 bg-green-600 text-white p-2 rounded-2xl shadow-lg border-2 border-white animate-bounce z-10">
+                  <Bell className="w-5 h-5 fill-white" />
+                </div>
+              )}
               <div className="text-4xl font-black mb-1">{table.number}</div>
               <div className={`text-[10px] font-bold uppercase tracking-widest ${status === 'occupied' ? 'opacity-70' : 'text-slate-400'}`}>
                 {table.capacity} Pax
@@ -295,9 +304,27 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
                       <div className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Current Balance</div>
                       <div className="text-4xl font-black tracking-tight">{CURRENCY}{selectedOrder.total.toLocaleString()}</div>
                     </div>
-                    <div className="flex items-center gap-2 text-green-400 font-black text-xs uppercase tracking-widest">
-                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                      Order Active
+                    <div className="flex flex-col items-end gap-2 text-green-400 font-black text-xs uppercase tracking-widest">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${selectedOrder.status === 'ready' ? 'bg-amber-500 animate-ping' : 'bg-green-500 animate-pulse'}`}></div>
+                        {selectedOrder.status === 'ready' ? 'MEAL READY' : 'Order Active'}
+                      </div>
+
+                      {selectedOrder.status === 'ready' && (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const updated = { ...selectedOrder, status: 'served' as const };
+                            await dbSaveOrder(updated);
+                            setSelectedOrder(updated);
+                            toast.success("Order marked as served!");
+                          }}
+                          className="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl flex items-center gap-2 transition-all transform active:scale-90 shadow-lg"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          CONFIRM PICKUP
+                        </button>
+                      )}
                     </div>
                   </div>
                 </>

@@ -9,6 +9,7 @@ import { useInventoryStore } from '../stores/useInventoryStore';
 import { useFinanceStore } from '../stores/useFinanceStore';
 import { useCRMStore } from '../stores/useCRMStore';
 import { useSyncStore } from '../stores/useSyncStore';
+import { useWalletStore } from '../stores/useWalletStore';
 import { toast } from 'sonner';
 
 // Components
@@ -196,6 +197,32 @@ const MenuView: React.FC<MenuViewProps> = ({
 
   // Final checkout completion with all payment data
   const completeCheckoutWithPayments = async (payments: Payment[]) => {
+    // 1. Handle Wallet/Credit deductions if applicable
+    for (const payment of payments) {
+      if (payment.method === 'WALLET' || payment.method === 'CREDIT') {
+        if (!customerId) {
+          toast.error("No customer selected for wallet/credit payment.");
+          return;
+        }
+
+        const success = await useWalletStore.getState().deduct(
+          customerId,
+          'CASH', // Wallet deduction always from cash wallet for now
+          payment.amount,
+          user.id,
+          user.name,
+          activeOrderId || `ORD-${Date.now()}`,
+          'ORDER',
+          payment.method === 'CREDIT' ? 'Payment on Credit' : 'Payment from Wallet'
+        );
+
+        if (!success) {
+          toast.error(payment.method === 'CREDIT' ? "Credit limit exceeded." : "Insufficient wallet balance.");
+          return;
+        }
+      }
+    }
+
     const sub = getSubtotal();
     const disc = sub * (discountPercent / 100);
     const afterDisc = sub - disc;
@@ -491,6 +518,7 @@ const MenuView: React.FC<MenuViewProps> = ({
           onCheckout={handlePaymentMethodSelected}
           onSplitPayment={handleSplitPayment}
           currency={branchSettings.currency}
+          activeCustomer={activeCustomer}
         />
       )}
 
