@@ -23,6 +23,7 @@ import TerminalBindingView from './views/TerminalBindingView';
 import ShiftManagementView from './views/ShiftManagementView';
 import NotificationListener from './components/NotificationListener';
 import PrinterRoutingView from './views/PrinterRoutingView';
+import TransactionHistoryView from './views/TransactionHistoryView';
 import { syncManager } from './services/syncManager';
 import DashboardSidebar from './components/DashboardSidebar';
 import ServerConnectionView from './views/ServerConnectionView';
@@ -300,6 +301,7 @@ const App: React.FC = () => {
         {view === AppView.CRM && <CustomerView onBack={() => setView(AppView.DASHBOARD)} />}
         {view === AppView.PURCHASING && user && <PurchasingView onBack={() => setView(AppView.DASHBOARD)} />}
         {view === AppView.MANUFACTURING && user && <ManufacturingView onBack={() => setView(AppView.DASHBOARD)} />}
+        {view === AppView.TRANSACTION_HISTORY && <TransactionHistoryView onBack={() => setView(AppView.DASHBOARD)} />}
         {view === AppView.RESERVATIONS && <ReservationsView onBack={() => setView(AppView.DASHBOARD)} />}
         {view === AppView.NOTIFICATION_SETTINGS && <NotificationSettingsView onBack={() => setView(AppView.DASHBOARD)} />}
         {view === AppView.SYSTEM_CONFIG && <SystemConfigView onBack={() => setView(AppView.SETTINGS)} />}

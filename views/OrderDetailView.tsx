@@ -237,27 +237,79 @@ const OrderDetailView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
             </div>
 
+
+
+            {/* Hidden Print Container */}
+            <div id="print-receipt" className="hidden print:block font-mono text-[12px] leading-tight p-4">
+                <div className="text-center mb-4">
+                    <h2 className="text-lg font-black uppercase">AFRI POS</h2>
+                    <div className="text-xs">SALES RECEIPT</div>
+                    <div className="text-[10px]">{new Date().toLocaleString()}</div>
+                    <div className="border-b border-dashed border-black my-2"></div>
+                    <div className="font-black">TABLE: {order.tableNumber}</div>
+                    <div>CASHIER: {order.cashierName}</div>
+                    <div>ORDER #: {order.id.slice(-6)}</div>
+                </div>
+                <div className="space-y-1 mb-4">
+                    {order.items.map((item, i) => (
+                        <div key={i} className="flex justify-between">
+                            <span>{item.quantity}x {item.name}</span>
+                            <span>{(item.price * item.quantity).toLocaleString()}</span>
+                        </div>
+                    ))}
+                </div>
+                <div className="border-t border-dashed border-black pt-2 flex justify-between font-black text-base">
+                    <span>TOTAL:</span>
+                    <span>₦{(order.subtotal * 1.075).toLocaleString()}</span>
+                </div>
+                {/* Payment Breakdown if available */}
+                {order.payments && order.payments.length > 0 && (
+                    <div className="mt-4 border-t border-dashed border-black pt-2 text-[10px]">
+                        <div className="font-black mb-1">PAYMENT DETAILS:</div>
+                        {order.payments.map((p, idx) => (
+                            <div key={idx} className="flex justify-between">
+                                <span>{p.method}</span>
+                                <span>₦{p.amount.toLocaleString()}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <div className="text-center mt-6 text-[10px] uppercase font-black">Thank you for your patronage!</div>
+            </div>
+
             {/* Payment Modal Integration */}
-            {isPaymentModalOpen && (
-                <PaymentModal
-                    order={order}
-                    isOpen={isPaymentModalOpen}
-                    onClose={() => setIsPaymentModalOpen(false)}
-                    onComplete={async (payments) => {
-                        const closedOrder = {
-                            ...order,
-                            status: 'completed' as const,
-                            payments,
-                            total: order.subtotal * 1.075 // Final total including tax
-                        };
-                        await saveOrder(closedOrder);
-                        setIsPaymentModalOpen(false);
-                        toast.success("Transaction Completed Successfully");
-                        onBack(); // Go back to floor map
-                    }}
-                />
-            )}
-        </div>
+            {
+                isPaymentModalOpen && (
+                    <PaymentModal
+                        order={order}
+                        isOpen={isPaymentModalOpen}
+                        onClose={() => setIsPaymentModalOpen(false)}
+                        onComplete={async (payments) => {
+                            const closedOrder = {
+                                ...order,
+                                status: 'completed' as const,
+                                payments,
+                                total: order.subtotal * 1.075 // Final total including tax
+                            };
+                            await saveOrder(closedOrder);
+                            setIsPaymentModalOpen(false);
+                            setOrder(closedOrder); // Update local state to show completion
+
+                            // Show Success Modal Logic (Inline for simplicity)
+                            toast.success("Transaction Completed Successfully");
+
+                            // Simple 500ms delay then print
+                            setTimeout(() => {
+                                if (window.confirm("Payment Successful! Print Receipt?")) {
+                                    window.print();
+                                }
+                                onBack();
+                            }, 500);
+                        }}
+                    />
+                )
+            }
+        </div >
     );
 };
 

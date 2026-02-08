@@ -4,7 +4,7 @@ export enum AppView {
   LOGIN_PASSWORD = 'LOGIN_PASSWORD',
   DASHBOARD = 'DASHBOARD',
   MENU = 'MENU',
-  HISTORY = 'HISTORY',
+  TRANSACTION_HISTORY = 'TRANSACTION_HISTORY',
   SETTINGS = 'SETTINGS',
   INVENTORY = 'INVENTORY',
   FLOOR_MAP = 'FLOOR_MAP',
@@ -362,6 +362,7 @@ export interface Order {
   customerPhone?: string;
   customerId?: string; // Link to CRM
   modifications?: OrderModification[];
+  notes?: string;
 
   // Printing tracking
   printedAt?: number;
