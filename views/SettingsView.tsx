@@ -5,6 +5,8 @@ import { Branch, User, Warehouse, TerminalConfig } from '../types';
 import { CURRENCY, DEFAULT_STAFF, DEFAULT_BRANCHES } from '../constants';
 import { useInventoryStore } from '../stores/useInventoryStore';
 import { useAppStore } from '../stores/useAppStore';
+import { AppView } from '../types';
+import { Shield, Smartphone, ArrowRight, Server, Key } from 'lucide-react';
 
 interface SettingsViewProps {
   onBack: () => void;
@@ -368,12 +370,21 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onBack, currentUser }) => {
               <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest border-l-4 border-indigo-600 pl-4">Terminal Configuration</h2>
               <p className="text-[10px] font-black text-slate-400 uppercase mt-1 ml-4">Device settings for this POS terminal</p>
             </div>
-            <button
-              onClick={() => setShowTerminalConfig(true)}
-              className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 shadow-lg transition-all"
-            >
-              Configure Device
-            </button>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setView(AppView.DEVICE_MANAGEMENT)}
+                className="bg-indigo-50 text-indigo-600 border border-indigo-200 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-100 transition-all flex items-center gap-2"
+              >
+                <Shield className="w-4 h-4" />
+                Manage Terminals
+              </button>
+              <button
+                onClick={() => setShowTerminalConfig(true)}
+                className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 shadow-lg transition-all"
+              >
+                Configure Device
+              </button>
+            </div>
           </div>
 
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm relative overflow-hidden">
