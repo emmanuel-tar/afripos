@@ -3,7 +3,14 @@ import {
     Order, Product, RawMaterial, Supplier,
     StockTransaction, PurchaseOrder, Expense,
     Customer, User, Shift, SupplierInvoice,
-    SupplierPayment, RFQ, CreditNote, Warehouse
+    SupplierPayment, RFQ, CreditNote, Warehouse,
+    ProductionOrder,
+    Recipe,
+    ManufacturingProcess,
+    NotificationTemplate,
+    BranchNotificationSetting,
+    NotificationLog,
+    Reservation
 } from '../types';
 
 export class AfriPOSDatabase extends Dexie {
@@ -22,6 +29,13 @@ export class AfriPOSDatabase extends Dexie {
     rfqs!: Table<RFQ>;
     creditNotes!: Table<CreditNote>;
     warehouses!: Table<Warehouse>;
+    recipes!: Table<Recipe>;
+    productionOrders!: Table<ProductionOrder>;
+    manufacturingProcesses!: Table<ManufacturingProcess>;
+    notificationTemplates!: Table<NotificationTemplate>;
+    notificationSettings!: Table<BranchNotificationSetting>;
+    notificationLogs!: Table<NotificationLog>;
+    reservations!: Table<Reservation>;
 
     constructor() {
         super('AfriPOSDatabase');
@@ -40,7 +54,16 @@ export class AfriPOSDatabase extends Dexie {
             payments: 'id, supplierId, date',
             rfqs: 'id, rfqNumber, status',
             creditNotes: 'id, supplierId, status',
-            warehouses: 'id, name'
+            warehouses: 'id, name',
+            recipes: 'id, name, productId, createdAt',
+            productionOrders: 'id, orderNumber, recipeId, status, createdAt',
+            manufacturingProcesses: 'id, name, createdAt',
+            notificationTemplates: 'id, event, channel',
+            notificationSettings: 'branchId',
+            notificationLogs: 'id, timestamp, customerId, reservationId, status',
+            reservations: 'id, customerName, date, status, branchId',
+            floors: 'id, order',
+            rooms: 'id, floorId, order'
         });
     }
 }

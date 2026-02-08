@@ -1,9 +1,13 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { useCRMStore } from '../stores/useCRMStore';
 import { Customer } from '../types';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useWalletStore } from '../stores/useWalletStore';
+import WalletSummaryCard from '../components/crm/WalletSummaryCard';
+import WalletLedger from '../components/crm/WalletLedger';
+import CreditConfigModal from '../components/crm/CreditConfigModal';
+import { useAppStore } from '../stores/useAppStore';
 
 const CURRENCY = '₦';
 
@@ -16,6 +20,8 @@ const CustomerView: React.FC<CustomerViewProps> = ({ onBack }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<Partial<Customer> | null>(null);
+    const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+    const [isCreditModalOpen, setIsCreditModalOpen] = useState(false);
 
     useEffect(() => {
         fetchCustomers();
@@ -43,7 +49,8 @@ const CustomerView: React.FC<CustomerViewProps> = ({ onBack }) => {
                 loyaltyPoints: 0,
                 creditBalance: 0,
                 totalSpent: 0,
-                lastVisit: Date.now()
+                lastVisit: Date.now(),
+                wallets: { cash: 0, promotional: 0, refund: 0, locked: 0 }
             };
             addCustomer(newCustomer);
             toast.success("New customer registered.");
@@ -147,21 +154,13 @@ const CustomerView: React.FC<CustomerViewProps> = ({ onBack }) => {
                                 </div>
                             </div>
                             <div className="bg-slate-50 p-6 flex gap-3 mt-auto border-t border-slate-100">
-                                <button onClick={() => { setEditingCustomer(customer); setIsCustomerModalOpen(true); }} className="flex-1 bg-white border border-slate-200 text-slate-600 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-indigo-600 transition-all">Edit Guest</button>
-                                <button onClick={() => {
-                                    const amount = Number(prompt("Enter top-up amount:"));
-                                    if (amount) {
-                                        updateBalance(customer.id, amount);
-                                        toast.success(`Added ${CURRENCY}${amount} to ${customer.name}'s wallet`);
-                                    }
-                                }} className="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all">Top Up</button>
+                                <button onClick={() => { setEditingCustomer(customer); setIsCustomerModalOpen(true); }} className="flex-1 bg-white border border-slate-200 text-slate-600 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-indigo-600 transition-all">Edit</button>
+                                <button onClick={() => setSelectedCustomer(customer)} className="flex-1 bg-slate-900 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 shadow-lg shadow-slate-100 transition-all">Wallet</button>
                                 <button onClick={() => {
                                     const points = Number(prompt(`Redeem points (Available: ${customer.loyaltyPoints})\nRate: 1 Point = ${CURRENCY}1`));
                                     if (points && points <= customer.loyaltyPoints) {
                                         redeemPoints(customer.id, points);
-                                        toast.success(`Redeemed ${points} points for ${CURRENCY}${points} credit`);
-                                    } else if (points > customer.loyaltyPoints) {
-                                        toast.error("Insufficient points");
+                                        toast.success(`Redeemed ${points} points`);
                                     }
                                 }} className="flex-1 bg-violet-600 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-violet-700 shadow-lg shadow-violet-100 transition-all">Redeem</button>
                             </div>
@@ -234,6 +233,108 @@ const CustomerView: React.FC<CustomerViewProps> = ({ onBack }) => {
                         </div>
                     </form>
                 </div>
+            )}
+
+            {/* Wallet Details Modal */}
+            {selectedCustomer && (
+                <div className="fixed inset-0 z-[250] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-8">
+                    <div className="bg-slate-50 w-full max-w-7xl h-[90vh] rounded-[4rem] shadow-2xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-10 duration-500">
+                        <div className="p-12 bg-white border-b border-slate-100 flex justify-between items-center shrink-0">
+                            <div className="flex items-center gap-8">
+                                <div className="w-24 h-24 rounded-[2rem] bg-indigo-600 text-white flex items-center justify-center text-4xl font-black">
+                                    {selectedCustomer.name[0]}
+                                </div>
+                                <div>
+                                    <h2 className="text-4xl font-black text-slate-900 tracking-tight uppercase">{selectedCustomer.name}</h2>
+                                    <div className="flex gap-4 mt-2">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">GUEST ID: {selectedCustomer.id}</span>
+                                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest cursor-pointer hover:underline" onClick={() => setIsCreditModalOpen(true)}>Manage Credit Config</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button onClick={() => setSelectedCustomer(null)} className="w-16 h-16 rounded-[1.5rem] bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center">
+                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-hidden flex p-12 gap-12">
+                            <div className="w-1/3 flex flex-col gap-8 overflow-y-auto">
+                                <WalletSummaryCard customer={selectedCustomer} />
+
+                                <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
+                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Quick Actions</h4>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <button
+                                            onClick={async () => {
+                                                const amount = Number(prompt("Enter top-up amount:"));
+                                                if (amount) {
+                                                    const user = useAppStore.getState().user;
+                                                    await useWalletStore.getState().topUp(
+                                                        selectedCustomer.id,
+                                                        'CASH',
+                                                        amount,
+                                                        user?.id || 'SYS',
+                                                        user?.name || 'System',
+                                                        "Manual Top-up"
+                                                    );
+                                                    fetchCustomers();
+                                                    toast.success("Wallet funded successfully");
+                                                }
+                                            }}
+                                            className="w-full py-4 rounded-2xl bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all"
+                                        >
+                                            Top Up Wallet
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                const amount = Number(prompt("Enter deduction amount:"));
+                                                if (amount) {
+                                                    const user = useAppStore.getState().user;
+                                                    const success = await useWalletStore.getState().deduct(
+                                                        selectedCustomer.id,
+                                                        'CASH',
+                                                        amount,
+                                                        user?.id || 'SYS',
+                                                        user?.name || 'System',
+                                                        undefined,
+                                                        'ADJUSTMENT',
+                                                        "Manual Adjustment"
+                                                    );
+                                                    if (success) {
+                                                        fetchCustomers();
+                                                        toast.success("Funds deducted successfully");
+                                                    } else {
+                                                        toast.error("Insufficient funds");
+                                                    }
+                                                }
+                                            }}
+                                            className="w-full py-4 rounded-2xl bg-white border border-slate-200 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all"
+                                        >
+                                            Manual Deduction
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex-1">
+                                <WalletLedger transactions={useWalletStore.getState().transactions.filter(tx => tx.customerId === selectedCustomer.id)} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Credit Config Modal */}
+            {isCreditModalOpen && selectedCustomer && (
+                <CreditConfigModal
+                    customer={selectedCustomer}
+                    onClose={() => setIsCreditModalOpen(false)}
+                    onSave={(config) => {
+                        updateCustomer({ ...selectedCustomer, creditConfig: config });
+                        setIsCreditModalOpen(false);
+                        toast.success("Credit configuration updated");
+                    }}
+                />
             )}
         </div>
     );

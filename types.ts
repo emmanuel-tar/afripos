@@ -12,7 +12,143 @@ export enum AppView {
   FINANCE = 'FINANCE',
   HR = 'HR',
   CRM = 'CRM',
-  PURCHASING = 'PURCHASING'
+  PURCHASING = 'PURCHASING',
+  MANUFACTURING = 'MANUFACTURING',
+  RESERVATIONS = 'RESERVATIONS',
+  NOTIFICATION_SETTINGS = 'NOTIFICATION_SETTINGS',
+  SYSTEM_CONFIG = 'SYSTEM_CONFIG',
+  CLOSE_BILL = 'CLOSE_BILL',
+  WALLET_MANAGEMENT = 'WALLET_MANAGEMENT'
+}
+
+export type NotificationChannel = 'SMS' | 'WHATSAPP';
+export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED';
+export type NotificationEvent =
+  | 'RESERVATION_CREATED'
+  | 'RESERVATION_CONFIRMED'
+  | 'RESERVATION_REMINDER'
+  | 'RESERVATION_SEATED'
+  | 'RESERVATION_CANCELLED'
+  | 'NO_SHOW';
+
+export interface NotificationTemplate {
+  id: string;
+  event: NotificationEvent;
+  channel: NotificationChannel;
+  content: string;
+  isActive: boolean;
+}
+
+export interface BranchNotificationSetting {
+  branchId: string;
+  enabledEvents: NotificationEvent[];
+  preferredChannel: NotificationChannel;
+  fallbackToSms: boolean;
+  reminderMinutesBefore: number;
+}
+
+export interface NotificationLog {
+  id: string;
+  timestamp: number;
+  customerId: string;
+  customerName: string;
+  reservationId: string;
+  channel: NotificationChannel;
+  event: NotificationEvent;
+  status: NotificationStatus;
+  errorMessage?: string;
+  content: string;
+}
+
+export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'SEATED' | 'CANCELLED' | 'NO_SHOW' | 'PAYMENT_EXPIRED';
+
+export type PaymentStatus = 'UNPAID' | 'PENDING' | 'PARTIALLY_PAID' | 'FULLY_PAID' | 'REFUNDED' | 'FORFEITED';
+
+export type DepositType = 'NONE' | 'FIXED' | 'PERCENTAGE' | 'FULL' | 'PER_PERSON';
+
+export interface DepositRule {
+  id: string;
+  name: string;
+  type: DepositType;
+  value: number; // Amount or percentage
+  branchId?: string; // Optional: all branches if empty
+  roomId?: string; // Optional: specific room
+  daysOfWeek?: number[]; // [0-6] 0=Sunday
+  startTime?: string; // HH:mm
+  endTime?: string; // HH:mm
+  minPartySize?: number;
+  maxPartySize?: number;
+  isRefundable: boolean;
+  refundCutoffHours: number;
+  isActive: boolean;
+}
+
+export interface PaymentRecord {
+  id: string;
+  reservationId: string;
+  customerId: string;
+  customerName: string;
+  amount: number;
+  method: PaymentMethod | 'WALLET' | 'USSD' | 'BANK_TRANSFER';
+  timestamp: number;
+  status: 'SUCCESS' | 'FAILED' | 'VOIDED';
+  reference: string;
+}
+
+export type WalletType = 'CASH' | 'PROMOTIONAL' | 'REFUND';
+
+export type WalletTransactionType =
+  | 'TOP_UP'
+  | 'DEDUCTION'
+  | 'LOCK'
+  | 'RELEASE'
+  | 'TRANSFER'
+  | 'EXPIRY';
+
+export interface WalletTransaction {
+  id: string;
+  customerId: string;
+  walletType: WalletType;
+  type: WalletTransactionType;
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  referenceId?: string; // Order ID, Reservation ID, etc.
+  referenceType?: 'ORDER' | 'RESERVATION' | 'ADJUSTMENT' | 'REFUND';
+  notes?: string;
+  staffId: string;
+  staffName: string;
+  timestamp: number;
+}
+
+export interface CustomerCreditConfig {
+  isEnabled: boolean;
+  creditLimit: number;
+  dueDateDays: number;
+  isPenaltyEnabled: boolean;
+  penaltyRate?: number;
+}
+
+export interface Reservation {
+  id: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm
+  partySize: number;
+  tableId?: string;
+  tableName?: string;
+  status: ReservationStatus;
+  paymentStatus: PaymentStatus;
+  totalDepositRequired: number;
+  depositPaid: number;
+  paymentDeadline?: number;
+  notes?: string;
+  branchId: string;
+  createdAt: number;
+  sendConfirmation: boolean;
+  notificationStatus?: NotificationStatus;
 }
 
 export type PrintLocation = 'KITCHEN' | 'BAR' | 'GRILL' | 'STORE';
@@ -164,7 +300,7 @@ export interface CartItem extends Product {
   isVoided?: boolean;
 }
 
-export type PaymentMethod = 'CASH' | 'POS' | 'TRANSFER' | 'COMPLIMENTARY';
+export type PaymentMethod = 'CASH' | 'POS' | 'TRANSFER' | 'COMPLIMENTARY' | 'WALLET';
 
 // Payment interface for split payments
 export interface Payment {
@@ -222,16 +358,39 @@ export interface Order {
 }
 
 export type TableStatus = 'available' | 'occupied' | 'reserved' | 'dirty';
+export type TableShape = 'SQUARE' | 'ROUND' | 'RECTANGULAR';
 
 export interface Table {
   id: string;
   number: string;
   status: TableStatus;
   capacity: number;
-  x?: number; // For drag & drop positioning in future
-  y?: number;
-  joinedWith?: string[]; // IDs of tables joined with this one
+  shape: TableShape;
+  roomId: string;
+  floorId: string;
+  x: number;
+  y: number;
+  rotation?: number;
+  joinedWith?: string[];
   assignedStaffId?: string;
+  isActive: boolean;
+}
+
+export interface Room {
+  id: string;
+  floorId: string;
+  name: string;
+  type: 'VIP' | 'REGULAR' | 'OUTDOOR' | 'BAR' | 'LOUNGE';
+  pricingMultiplier: number; // e.g. 1.1 for +10%
+  isActive: boolean;
+  order: number;
+}
+
+export interface Floor {
+  id: string;
+  name: string;
+  order: number;
+  isActive: boolean;
 }
 
 export interface Expense {
@@ -251,9 +410,16 @@ export interface Customer {
   email?: string;
   address?: string;
   loyaltyPoints: number;
-  creditBalance: number;
+  creditBalance: number; // For backward compatibility / total of available wallets
   totalSpent: number;
   lastVisit?: number;
+  wallets?: {
+    cash: number;
+    promotional: number;
+    refund: number;
+    locked: number;
+  };
+  creditConfig?: CustomerCreditConfig;
 }
 
 export type InvoiceStatus = 'DRAFT' | 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
@@ -320,4 +486,73 @@ export interface RFQ {
   status: 'DRAFT' | 'SENT' | 'CLOSED';
   deadline: number;
   dateCreated: number;
+}
+
+// Manufacturing Module Types
+export interface RecipeIngredient {
+  materialId: string;
+  materialName: string;
+  quantity: number;
+  unit: string;
+  costPerUnit: number;
+}
+
+export interface Recipe {
+  id: string;
+  name: string;
+  description?: string;
+  productId: string; // The finished product this recipe produces
+  productName: string;
+  yieldQuantity: number; // How many units this recipe produces
+  yieldUnit: string;
+  ingredients: RecipeIngredient[];
+  laborCost?: number; // Additional labor cost per batch
+  overheadCost?: number; // Overhead cost per batch
+  totalCost: number; // Calculated total cost per batch
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export type ProductionOrderStatus = 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
+export interface ProductionOrder {
+  id: string;
+  orderNumber: string;
+  recipeId: string;
+  recipeName: string;
+  plannedQuantity: number;
+  actualQuantity?: number;
+  status: ProductionOrderStatus;
+  startTime?: number;
+  completionTime?: number;
+  assignedTo?: string; // User ID
+  assignedToName?: string;
+  notes?: string;
+  batchNumber?: string;
+  qualityCheck?: {
+    passed: boolean;
+    checkedBy: string;
+    checkedAt: number;
+    notes?: string;
+  };
+  createdBy: string;
+  createdAt: number;
+  locationId: string;
+}
+
+export interface ManufacturingProcess {
+  id: string;
+  name: string;
+  description?: string;
+  steps: {
+    stepNumber: number;
+    name: string;
+    description?: string;
+    duration?: number; // in minutes
+    requiresEquipment?: string;
+  }[];
+  recipes: string[]; // Recipe IDs that use this process
+  createdBy: string;
+  createdAt: number;
 }

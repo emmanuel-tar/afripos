@@ -10,6 +10,12 @@ import { PurchasingView } from './views/PurchasingView';
 import FloorMapView from './views/FloorMapView';
 import StationDisplayView from './views/StationDisplayView';
 import SettingsView from './views/SettingsView';
+import ManufacturingView from './views/ManufacturingView';
+import ReservationsView from './views/ReservationsView';
+import NotificationSettingsView from './views/NotificationSettingsView';
+import SystemConfigView from './views/SystemConfigView';
+import OrderDetailView from './views/OrderDetailView';
+import WalletManagementView from './views/WalletManagementView';
 import DashboardSidebar from './components/DashboardSidebar';
 import { getSyncStatus } from './services/db';
 import { useAppStore } from './stores/useAppStore';
@@ -71,10 +77,7 @@ const App: React.FC = () => {
   };
 
   const handleSettleTable = (order: Order) => {
-    setTableNumber(order.tableNumber!);
-    // Hydrate cart from existing order? MenuView handles that via db service currently.
-    // Ideally useCartStore should have loadOrder(orderId). logic stays in MenuView for now or refactored later.
-    setView(AppView.MENU, { initialCheckout: true });
+    setView(AppView.CLOSE_BILL, { tableNumber: order.tableNumber });
   };
 
   const onLoginSuccess = () => {
@@ -204,7 +207,13 @@ const App: React.FC = () => {
         {view === AppView.FINANCE && <FinanceView onBack={() => setView(AppView.DASHBOARD)} />}
         {view === AppView.HR && <StaffView onBack={() => setView(AppView.DASHBOARD)} />}
         {view === AppView.CRM && <CustomerView onBack={() => setView(AppView.DASHBOARD)} />}
-        {view === AppView.PURCHASING && <PurchasingView onBack={() => setView(AppView.DASHBOARD)} />}
+        {view === AppView.PURCHASING && user && <PurchasingView onBack={() => setView(AppView.DASHBOARD)} />}
+        {view === AppView.MANUFACTURING && user && <ManufacturingView onBack={() => setView(AppView.DASHBOARD)} />}
+        {view === AppView.RESERVATIONS && <ReservationsView onBack={() => setView(AppView.DASHBOARD)} />}
+        {view === AppView.NOTIFICATION_SETTINGS && <NotificationSettingsView onBack={() => setView(AppView.DASHBOARD)} />}
+        {view === AppView.SYSTEM_CONFIG && <SystemConfigView onBack={() => setView(AppView.SETTINGS)} />}
+        {view === AppView.CLOSE_BILL && <OrderDetailView onBack={() => setView(AppView.DASHBOARD)} />}
+        {view === AppView.WALLET_MANAGEMENT && <WalletManagementView onBack={() => setView(AppView.DASHBOARD)} />}
       </div>
       <Toaster position="top-right" richColors />
     </div>
