@@ -135,9 +135,10 @@ const App: React.FC = () => {
   if (!user) return <StaffLoginView />;
   if (!activeShift) return <ShiftManagementView />;
 
-  const canAccessSettings = user?.role === 'admin' || user?.role === 'manager';
-  const canAccessInventory = user?.role === 'admin' || user?.role === 'manager' || user?.role === 'chef';
-  const canAccessKDS = user?.role === 'admin' || user?.role === 'chef' || user?.role === 'bartender';
+  const canAccessSettings = (user?.role === 'admin' || user?.role === 'manager') && currentDevice?.type === 'ADMIN';
+  const canAccessInventory = (user?.role === 'admin' || user?.role === 'manager' || user?.role === 'chef') && currentDevice?.type === 'ADMIN';
+  const canAccessKDS = (user?.role === 'admin' || user?.role === 'chef' || user?.role === 'bartender') && (currentDevice?.type === 'KDS' || currentDevice?.type === 'ADMIN');
+  const canAccessPOS = (user?.role === 'admin' || user?.role === 'manager' || user?.role === 'waiter') && (currentDevice?.type === 'CASHPOINT' || currentDevice?.type === 'WAITER' || currentDevice?.type === 'ADMIN');
 
   return (
     <div className="h-screen w-screen bg-slate-100 flex flex-col">
@@ -257,8 +258,8 @@ const App: React.FC = () => {
             onSettleTable={handleSettleTable}
           />
         )}
-        {view === AppView.STATION_DISPLAY && <StationDisplayView onBack={() => setView(AppView.DASHBOARD)} />}
-        {view === AppView.MENU && user && (
+        {view === AppView.STATION_DISPLAY && canAccessKDS && <StationDisplayView onBack={() => setView(AppView.DASHBOARD)} />}
+        {(view === AppView.MENU || view === AppView.FLOOR_MAP) && canAccessPOS && (
           <MenuView
             tableNumber={useCartStore.getState().tableNumber || '1'}
             user={user}

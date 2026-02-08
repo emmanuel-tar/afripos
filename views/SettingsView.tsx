@@ -16,7 +16,7 @@ interface SettingsViewProps {
 const SettingsView: React.FC<SettingsViewProps> = ({ onBack, currentUser }) => {
   // Inventory Store
   const { warehouses, addWarehouse, deleteWarehouse, fetchInventory } = useInventoryStore();
-  const { terminalConfig, setTerminalConfig } = useAppStore();
+  const { terminalConfig, setTerminalConfig, setView } = useAppStore();
 
   useEffect(() => {
     fetchInventory();

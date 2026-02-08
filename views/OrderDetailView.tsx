@@ -3,12 +3,14 @@ import { Order, CartItem, AppView, User, Payment, PaymentMethod } from '../types
 import { getActiveTableOrder, saveOrder } from '../services/db';
 import { useAppStore } from '../stores/useAppStore';
 import { useCartStore } from '../stores/useCartStore';
+import { useDeviceStore } from '../stores/useDeviceStore';
 import { toast } from 'sonner';
 import { Cloud, CloudOff, Clock, User as UserIcon, RefreshCcw } from 'lucide-react';
 import PaymentModal from '../components/pos/PaymentModal';
 
 const OrderDetailView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const { viewParams, setView, user } = useAppStore();
+    const { currentDevice } = useDeviceStore();
     const [order, setOrder] = useState<Order | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -80,8 +82,8 @@ const OrderDetailView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
                             {/* Sync Status Badge */}
                             <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${order.syncStatus === 'SYNCED'
-                                    ? 'bg-green-50 text-green-600 border-green-200'
-                                    : 'bg-amber-50 text-amber-600 border-amber-200 animate-pulse'
+                                ? 'bg-green-50 text-green-600 border-green-200'
+                                : 'bg-amber-50 text-amber-600 border-amber-200 animate-pulse'
                                 }`}>
                                 {order.syncStatus === 'SYNCED' ? <Cloud className="w-3 h-3" /> : <RefreshCcw className="w-3 h-3 animate-spin" />}
                                 {order.syncStatus === 'SYNCED' ? 'Local Server: Synced' : 'Syncing to Server...'}
@@ -106,20 +108,24 @@ const OrderDetailView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2-2H9a2 2 0 00-2-2H9a2 2 0 00-2 2v4" /></svg>
                         Bill Preview
                     </button>
-                    <button
-                        className="px-6 py-3 rounded-2xl bg-amber-500 text-white font-black text-[10px] uppercase tracking-widest hover:bg-amber-600 transition-all shadow-lg active:scale-95 flex items-center gap-3"
-                        onClick={() => toast.info("Bill reopened for modifications")}
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                        Reopen Order
-                    </button>
-                    <button
-                        onClick={() => setIsPaymentModalOpen(true)}
-                        className="px-10 py-3 rounded-2xl bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl active:scale-95 flex items-center gap-3"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        Close Bill
-                    </button>
+                    {(currentDevice?.type === 'CASHPOINT' || currentDevice?.type === 'ADMIN') && (
+                        <>
+                            <button
+                                className="px-6 py-3 rounded-2xl bg-amber-500 text-white font-black text-[10px] uppercase tracking-widest hover:bg-amber-600 transition-all shadow-lg active:scale-95 flex items-center gap-3"
+                                onClick={() => toast.info("Bill reopened for modifications")}
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                                Reopen Order
+                            </button>
+                            <button
+                                onClick={() => setIsPaymentModalOpen(true)}
+                                className="px-10 py-3 rounded-2xl bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl active:scale-95 flex items-center gap-3"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                Close Bill
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
