@@ -32,8 +32,9 @@ import { useAppStore } from './stores/useAppStore';
 import { useCartStore } from './stores/useCartStore';
 import { useTerminalStore } from './stores/useTerminalStore';
 import { useDeviceStore } from './stores/useDeviceStore';
+import { useNotificationStore } from './stores/useNotificationStore';
 import { Toaster } from 'sonner';
-import { RefreshCcw } from 'lucide-react';
+import { RefreshCcw, Server } from 'lucide-react';
 import { migrateFromLocalStorage } from './services/offlineDb';
 
 const App: React.FC = () => {
@@ -115,7 +116,7 @@ const App: React.FC = () => {
 
   const handleFastOrder = () => {
     setTableNumber('FAST');
-    clearCart();
+    // clearCart(); // Don't clear cart, let session persist
     setView(AppView.MENU, { initialCheckout: false });
   };
 
@@ -170,11 +171,34 @@ const App: React.FC = () => {
               </span>
             </div>
 
+            {/* Pairing Notification Bell (Hub Master Only) */}
+            {currentDevice?.id === 'HUB-MASTER' && (() => {
+              const { pendingPairingRequests } = useNotificationStore();
+              const hasPendingRequests = pendingPairingRequests.length > 0;
+
+              return hasPendingRequests ? (
+                <button
+                  onClick={() => setView(AppView.DEVICE_MANAGEMENT)}
+                  className="relative flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 rounded-full border border-amber-200 hover:bg-amber-100 transition-all shadow-sm animate-pulse"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                  <span className="text-[9px] font-black uppercase tracking-widest">{pendingPairingRequests.length} New Request{pendingPairingRequests.length !== 1 ? 's' : ''}</span>
+                </button>
+              ) : null;
+            })()}
+
             {/* Local Server Sync Status */}
-            <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-full border border-slate-200">
-              <RefreshCcw className="w-3 h-3 text-indigo-500" />
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Local Server Active</span>
-            </div>
+            {currentDevice?.id === 'HUB-MASTER' ? (
+              <div className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-200">
+                <Server className="w-3 h-3" />
+                <span className="text-[9px] font-black uppercase tracking-widest">Local Server Hub (Primary)</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-full border border-slate-200">
+                <RefreshCcw className="w-3 h-3 text-indigo-500" />
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Local Server Active</span>
+              </div>
+            )}
           </div>
         </div>
       )}

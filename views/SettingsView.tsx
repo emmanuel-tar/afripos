@@ -5,6 +5,7 @@ import { Branch, User, Warehouse, TerminalConfig } from '../types';
 import { CURRENCY, DEFAULT_STAFF, DEFAULT_BRANCHES } from '../constants';
 import { useInventoryStore } from '../stores/useInventoryStore';
 import { useAppStore } from '../stores/useAppStore';
+import { useDeviceStore } from '../stores/useDeviceStore';
 import { AppView } from '../types';
 import { Shield, Smartphone, ArrowRight, Server, Key } from 'lucide-react';
 
@@ -371,6 +372,17 @@ const SettingsView: React.FC<SettingsViewProps> = ({ onBack, currentUser }) => {
               <p className="text-[10px] font-black text-slate-400 uppercase mt-1 ml-4">Device settings for this POS terminal</p>
             </div>
             <div className="flex gap-4">
+              <button
+                onClick={() => {
+                  if (confirm('Are you sure you want to disconnect this terminal? You will need to re-pair it with the server.')) {
+                    useDeviceStore.getState().resetDevice();
+                  }
+                }}
+                className="bg-red-50 text-red-600 border border-red-200 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-100 transition-all flex items-center gap-2"
+              >
+                <Smartphone className="w-4 h-4" />
+                Switch Device Mode
+              </button>
               <button
                 onClick={() => setView(AppView.DEVICE_MANAGEMENT)}
                 className="bg-indigo-50 text-indigo-600 border border-indigo-200 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-100 transition-all flex items-center gap-2"

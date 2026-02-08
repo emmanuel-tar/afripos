@@ -4,8 +4,9 @@ import { CURRENCY } from '../constants';
 import { TableStatus, Order, Table } from '../types';
 import { getOrders, transferOrderToTable } from '../services/db';
 import { useTableStore } from '../stores/useTableStore';
+import { useCartStore } from '../stores/useCartStore'; // Import Added
 import { CreateTableModal, TransferTableModal, JoinTableModal } from '../components/pos/modals/TableManagementModals';
-import { Bell, CheckCircle2 } from 'lucide-react';
+import { Bell, CheckCircle2, ShoppingCart } from 'lucide-react'; // Icon Added
 import { toast } from 'sonner';
 import { saveOrder as dbSaveOrder } from '../services/db';
 
@@ -17,6 +18,7 @@ interface FloorMapViewProps {
 
 const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSettleTable }) => {
   const { tables, initializeTables, deleteTable, transferTable: transferTableStore, joinTables } = useTableStore();
+  const { sessions } = useCartStore(); // Access Sessions
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedTableIdForDetails, setSelectedTableIdForDetails] = useState<string | null>(null);
@@ -46,6 +48,13 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
     return activeOrders.find(o => o.tableNumber === tableNumber);
   };
 
+  const getDraftSession = (tableNumber: string) => {
+    // Check if there is a local session with items
+    const session = sessions[tableNumber];
+    if (session && session.cart.length > 0) return session;
+    return null;
+  };
+
   const getStatus = (table: Table): TableStatus => {
     // If we have local state overrides or joined status, consider them
     if (table.status === 'reserved' || table.status === 'dirty') return table.status;
@@ -54,14 +63,21 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
     const order = getTableData(table.number);
     if (order) return 'occupied';
 
+    // Check for Draft
+    const draft = getDraftSession(table.number);
+    if (draft) return 'occupied'; // Treat as occupied visually, but maybe different color
+
     // Check if part of a joined group where another table is occupied
     // This is a simplified check. In a full implementation, we'd check all linked tables.
 
     return 'available';
   };
 
-  const getStatusColor = (status: TableStatus, isReady: boolean = false) => {
+  const getStatusColor = (status: TableStatus, isReady: boolean = false, isDraft: boolean = false) => {
     if (isReady) return 'bg-green-500 text-white shadow-[0_0_25px_rgba(34,197,94,0.6)] animate-pulse ring-4 ring-green-100';
+
+    if (isDraft) return 'bg-sky-500 text-white shadow-sky-200 ring-4 ring-sky-50 border-2 border-white';
+
     switch (status) {
       case 'occupied': return 'bg-indigo-600 text-white shadow-indigo-200 ring-4 ring-indigo-50';
       case 'reserved': return 'bg-amber-500 text-white';
@@ -165,7 +181,9 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
         {tables.map(table => {
           const status = getStatus(table);
           const order = getTableData(table.number);
+          const draft = getDraftSession(table.number);
           const isJoined = table.joinedWith && table.joinedWith.length > 0;
+          const isDraft = !!draft && !order;
 
           return (
             <button
@@ -173,7 +191,7 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
               onClick={() => handleTableClick(table)}
               className={`
                 aspect-square rounded-[3rem] shadow-xl flex flex-col items-center justify-center transition-all active:scale-95 group relative
-                ${getStatusColor(status, order?.status === 'ready')}
+                ${getStatusColor(status, order?.status === 'ready', isDraft)}
                 ${isJoined ? 'ring-4 ring-offset-2 ring-indigo-300' : ''}
               `}
             >
@@ -182,6 +200,12 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
                   <Bell className="w-5 h-5 fill-white" />
                 </div>
               )}
+              {isDraft && (
+                <div className="absolute -top-2 -right-2 bg-sky-500 text-white p-2 rounded-2xl shadow-lg border-2 border-white animate-bounce z-10">
+                  <ShoppingCart className="w-4 h-4 stroke-white" />
+                </div>
+              )}
+
               <div className="text-4xl font-black mb-1">{table.number}</div>
               <div className={`text-[10px] font-bold uppercase tracking-widest ${status === 'occupied' ? 'opacity-70' : 'text-slate-400'}`}>
                 {table.capacity} Pax
@@ -198,7 +222,14 @@ const FloorMapView: React.FC<FloorMapViewProps> = ({ onBack, onSelectTable, onSe
                   {CURRENCY}{order.total.toLocaleString()}
                 </div>
               )}
-              {status === 'available' && (
+
+              {isDraft && (
+                <div className="mt-3 px-4 py-1.5 bg-sky-700/40 backdrop-blur-sm rounded-full text-[10px] font-black uppercase tracking-tighter relative overflow-hidden">
+                  <span className="relative z-10">DRAFT</span>
+                </div>
+              )}
+
+              {status === 'available' && !isDraft && (
                 <div className="absolute inset-0 border-2 border-dashed border-slate-100 rounded-[3rem] -m-1 group-hover:border-indigo-200 transition-colors"></div>
               )}
 

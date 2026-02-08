@@ -1,17 +1,20 @@
 import React, { useEffect, useRef } from 'react';
 import { useNotificationStore } from '../stores/useNotificationStore';
+import { useDeviceStore } from '../stores/useDeviceStore';
 import { getOrders } from '../services/db';
 import { useAppStore } from '../stores/useAppStore';
 
 const NotificationListener: React.FC = () => {
     const { user } = useAppStore();
-    const { setReadyOrders, isAlarmActive } = useNotificationStore();
+    const { currentDevice, pendingRequests } = useDeviceStore();
+    const { setReadyOrders, isAlarmActive, setPendingPairingRequests } = useNotificationStore();
     const audioContextRef = useRef<AudioContext | null>(null);
     const oscillatorRef = useRef<OscillatorNode | null>(null);
     const intervalRef = useRef<number | null>(null);
 
     // Only active for Waiters and Admins
     const isWaiter = user?.role === 'waiter' || user?.role === 'admin' || user?.role === 'manager';
+    const isHubMaster = currentDevice?.id === 'HUB-MASTER';
 
     useEffect(() => {
         if (!isWaiter) return;
@@ -27,6 +30,21 @@ const NotificationListener: React.FC = () => {
 
         return () => clearInterval(pollInterval);
     }, [isWaiter, setReadyOrders]);
+
+    // Poll for pending pairing requests (Hub Master only)
+    useEffect(() => {
+        if (!isHubMaster) return;
+
+        const checkPairingRequests = () => {
+            const pendingIds = pendingRequests.map(r => r.id);
+            setPendingPairingRequests(pendingIds);
+        };
+
+        checkPairingRequests();
+        const pollInterval = setInterval(checkPairingRequests, 3000); // Poll every 3 seconds
+
+        return () => clearInterval(pollInterval);
+    }, [isHubMaster, pendingRequests, setPendingPairingRequests]);
 
     const playBeep = () => {
         try {

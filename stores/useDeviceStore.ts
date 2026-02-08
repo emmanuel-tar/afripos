@@ -12,6 +12,7 @@ interface DeviceState {
     approveDevice: (deviceId: string) => void;
     rejectDevice: (deviceId: string) => void;
     revokeDevice: (deviceId: string) => void;
+    initializeAsHub: (name: string) => void;
     resetDevice: () => void;
 }
 
@@ -66,6 +67,20 @@ export const useDeviceStore = create<DeviceState>()(
                 set((state) => ({
                     trustedDevices: state.trustedDevices.filter(d => d.id !== deviceId)
                 }));
+            },
+
+            initializeAsHub: (name) => {
+                const hubDevice: Device = {
+                    id: 'HUB-MASTER',
+                    name,
+                    type: 'ADMIN',
+                    status: 'APPROVED',
+                    ip: '127.0.0.1',
+                    token: 'master_hub_token',
+                    pairedAt: Date.now(),
+                    lastSeen: Date.now()
+                };
+                set({ currentDevice: hubDevice });
             },
 
             resetDevice: () => set({ currentDevice: null })
