@@ -37,6 +37,7 @@ import { useNotificationStore } from './stores/useNotificationStore';
 import { Toaster } from 'sonner';
 import { RefreshCcw, Server } from 'lucide-react';
 import { migrateFromLocalStorage } from './services/offlineDb';
+import { Analytics } from '@vercel/analytics/react';
 
 const App: React.FC = () => {
   const { view, viewParams, setView, user, currentBranch, isOnline, setIsOnline, error, setError } = useAppStore();
@@ -312,6 +313,7 @@ const App: React.FC = () => {
       </div>
       <Toaster position="top-right" richColors />
       <NotificationListener />
+      <Analytics />
     </div >
   );
 };
